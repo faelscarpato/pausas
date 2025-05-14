@@ -24,7 +24,7 @@
         }
         .modal-content {
             background-color: #ffffff; margin: auto; padding: 20px;
-            border: 1px solid #888; width: 80%; max-width: 500px;
+            border: 1px solid #888; width: 90%; max-width: 500px; 
             border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .close-button {
@@ -39,40 +39,52 @@
             transform: translateX(-50%); background-color: #333;
             color: white; padding: 10px 20px; border-radius: 5px;
             z-index: 1000; opacity: 0; transition: opacity 0.5s ease-in-out;
+            width: 90%; max-width: 400px; text-align: center;
         }
         .toast.show { opacity: 1; }
 
         .nav-button {
-            display: inline-flex; align-items: center; padding: 0.5rem 1rem;
+            display: inline-flex; align-items: center; padding: 0.5rem 0.75rem; 
             border-radius: 0.375rem; color: #4b5563; font-weight: 500;
             transition: background-color 0.2s, color 0.2s;
+            font-size: 0.875rem; 
+        }
+        @media (min-width: 640px) { /* sm */
+            .nav-button {
+                padding: 0.5rem 1rem;
+                font-size: 1rem; 
+            }
         }
         .nav-button:hover { background-color: #d1d5db; }
         .nav-button.active { background-color: #3b82f6; color: white; }
         .nav-button.active:hover { background-color: #2563eb; }
-        .nav-button i { margin-right: 0.5rem; }
+        .nav-button i { margin-right: 0.25rem;  }
+         @media (min-width: 640px) { /* sm */
+            .nav-button i { margin-right: 0.5rem; }
+        }
+
 
         .control-button {
-            padding: 0.375rem 0.75rem; /* py-1.5 px-3 */
-            border: 1px solid #d1d5db; /* border-gray-300 */
-            border-radius: 0.375rem; /* rounded-md */
+            padding: 0.375rem 0.75rem; 
+            border: 1px solid #d1d5db; 
+            border-radius: 0.375rem; 
             background-color: white;
-            color: #4b5563; /* text-gray-600 */
-            font-size: 0.875rem; /* text-sm */
+            color: #4b5563; 
+            font-size: 0.875rem; 
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
             display: inline-flex;
             align-items: center;
         }
         .control-button:hover {
-            background-color: #f3f4f6; /* hover:bg-gray-100 */
+            background-color: #f3f4f6; 
         }
         .control-button.active {
-            background-color: #3b82f6; /* bg-blue-500 */
+            background-color: #3b82f6; 
             color: white;
-            border-color: #3b82f6; /* border-blue-500 */
+            border-color: #3b82f6; 
         }
         .control-button i {
-            margin-right: 0.375rem; /* mr-1.5 */
+            margin-right: 0.375rem; 
         }
 
         .print-only { display: none; } 
@@ -94,10 +106,10 @@
         .section-hidden { display: none !important; }
     </style>
 </head>
-<body class="p-0">
-    <header class="bg-gray-800 text-white p-6 shadow-md">
-        <h1 class="text-2xl font-bold text-center mb-4">CONTROLE DE ABSENTEÍSMO</h1>
-        <nav class="flex justify-center space-x-4">
+<body class="p-0 min-h-screen flex flex-col">
+    <header class="bg-gray-800 text-white p-4 sm:p-6 shadow-md">
+        <h1 class="text-xl sm:text-2xl font-bold text-center mb-4">CONTROLE DE ABSENTEÍSMO</h1>
+        <nav class="flex flex-wrap justify-center gap-2 sm:space-x-4">
             <button id="navRegistrarPresencas" class="nav-button active">
                 <i data-lucide="clipboard-list"></i>Registrar Presenças
             </button>
@@ -110,166 +122,23 @@
         </nav>
     </header>
 
-    <main class="p-4 md:p-8">
+    <main class="p-4 md:p-8 flex-grow">
         <section id="sectionRegistrarPresencas" class="space-y-6">
-            <div class="text-center mb-6">
-                <label for="attendanceDate" class="block text-sm font-medium text-gray-700 mb-1">Data Selecionada</label>
-                <input type="date" id="attendanceDate" class="mx-auto p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 w-full max-w-xs">
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h2 class="text-xl font-semibold text-gray-700">Registrar Presença/Ausência</h2>
-                        <button id="openAddEmployeeModalBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
-                            <i data-lucide="user-plus" class="mr-2 h-5 w-5"></i>Novo Funcionário
-                        </button>
-                    </div>
-                    <div>
-                        <label for="attendanceEmployeeSelect" class="block text-sm font-medium text-gray-700 mb-1">Selecione o Funcionário:</label>
-                        <select id="attendanceEmployeeSelect" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </select>
-                    </div>
-                    <div>
-                        <label for="attendanceStatus" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
-                        <select id="attendanceStatus" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="presente">Presente</option>
-                            <option value="ausente">Ausente</option>
-                        </select>
-                    </div>
-                    <button id="registerAttendanceBtn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-150 ease-in-out">
-                        Registrar
-                    </button>
-                </div>
-
-                <div class="md:col-span-1 space-y-4">
-                    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow">
-                        <h3 class="font-bold mb-1">Instruções</h3>
-                        <p class="text-sm">Use o formulário ao lado para registrar a presença ou ausência de um funcionário. Selecione o funcionário, indique se está presente ou ausente, e clique em "Registrar".</p>
-                    </div>
-                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow">
-                        <h3 class="font-bold mb-1">Como funciona</h3>
-                         <p class="text-sm">Operadores: "Horário de Pausa Base" é referência para Janeiro e rotaciona mensalmente. A alocação na tabela de pausa para operadores inicia às 16h. Demais tipos (Supervisor, Líder, Treinador): o horário de pausa é fixo.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white p-6 rounded-lg shadow-lg">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
-                    <h2 class="text-xl font-semibold text-gray-700">Resumo de Presenças do Dia</h2>
-                    <div class="flex flex-wrap gap-2 items-center">
-                        <div class="flex gap-1">
-                            <button id="viewModeList" class="control-button" title="Visualizar como Lista">
-                                <i data-lucide="list"></i>
-                            </button>
-                            <button id="viewModeGallery" class="control-button active" title="Visualizar como Galeria">
-                                <i data-lucide="layout-grid"></i>
-                            </button>
-                        </div>
-                        <div class="flex gap-1">
-                            <button id="sortAZ" class="control-button active" title="Ordenar A-Z">
-                                <i data-lucide="sort-asc"></i> A-Z
-                            </button>
-                            <button id="sortZA" class="control-button" title="Ordenar Z-A">
-                                <i data-lucide="sort-desc"></i> Z-A
-                            </button>
-                        </div>
-                        <button id="openAddEmployeeModalBtnSecondary" class="text-blue-500 hover:text-blue-700 font-semibold py-1.5 px-3 rounded-lg inline-flex items-center text-sm border border-blue-500 hover:bg-blue-50">
-                            <i data-lucide="plus-circle" class="mr-1.5 h-4 w-4"></i>Adicionar Funcionário
-                        </button>
-                    </div>
-                </div>
-                <div id="employeeSummaryContainer">
-                </div>
-            </div>
-        </section>
+            </section>
 
         <section id="sectionHorariosPausa" class="section-hidden printable-content">
-             <div class="bg-white p-6 rounded-lg shadow-lg">
-                <div class="flex flex-wrap gap-2 mb-4 no-print items-center">
-                     <h2 class="text-xl font-semibold text-gray-700 mr-auto">Horários de Pausa (<span id="scheduleDateDisplayPausa"></span>)</h2>
-                    <button id="exportPdfBtn" class="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
-                        <i data-lucide="file-down" class="mr-2 h-5 w-5"></i>Exportar PDF
-                    </button>
-                    <button id="exportPngBtn" class="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
-                        <i data-lucide="image" class="mr-2 h-5 w-5"></i>Exportar PNG
-                    </button>
-                    <button id="printScheduleBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
-                        <i data-lucide="printer" class="mr-2 h-5 w-5"></i>Imprimir
-                    </button>
-                </div>
-                <div id="printableArea" class="overflow-x-auto bg-white p-0 md:p-4 rounded">
-                    <div id="printableAreaHeader" class="text-center mb-4 print-only"> 
-                        <h2 class="text-2xl font-bold text-gray-800">Horários de Janta</h2>
-                        <h3 class="text-lg font-semibold text-gray-600">Horário de Pausas e Operadores - <span id="scheduleDateDisplayForTitle"></span></h3>
-                    </div>
-                    <table id="breakScheduleTable" class="min-w-full bg-white rounded-lg shadow mb-4">
-                        <thead></thead>
-                        <tbody id="breakScheduleTableBody" class="divide-y divide-gray-200"></tbody>
-                    </table>
-                    <div id="printableAreaFooter" class="text-center text-xs text-gray-600 pt-4 mt-4 border-t border-gray-200">
-                        ScWeb - 2025 @ Rafael Scarpato
-                    </div>
-                </div>
-            </div>
-        </section>
+            </section>
 
         <section id="sectionDashboard" class="section-hidden">
-            <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard</h2>
-                <i data-lucide="construction" class="h-16 w-16 text-gray-400 mx-auto mb-2"></i>
-                <p class="text-gray-500">Esta seção está em desenvolvimento.</p>
-            </div>
-        </section>
+            </section>
     </main>
 
-    <footer id="mainFooter" class="text-center py-6 mt-8 text-sm text-gray-500 border-t border-gray-300">
+    <footer id="mainFooter" class="text-center py-6 mt-auto text-sm text-gray-500 border-t border-gray-300">
         ScWeb - 2025 @ Rafael Scarpato
     </footer>
 
     <div id="employeeModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" id="closeEmployeeModalBtn">&times;</span>
-            <h3 id="employeeModalTitle" class="text-xl font-semibold mb-4">Adicionar Funcionário</h3>
-            <form id="employeeForm">
-                <input type="hidden" id="employeeId">
-                <div class="mb-4">
-                    <label for="employeeName" class="block text-sm font-medium text-gray-700">Nome:</label>
-                    <input type="text" id="employeeName" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                <div class="mb-4">
-                    <label for="employeeType" class="block text-sm font-medium text-gray-700">Tipo:</label>
-                    <select id="employeeType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="operador">Operador</option>
-                        <option value="trocador">Trocador (Supervisor de Linha)</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="lider">Líder</option>
-                        <option value="treinador">Treinador</option>
-                    </select>
-                </div>
-                <div id="operadorFieldsContainer"> <div id="horarioPausaField" class="mb-4" style="display: none;">
-                        <label for="employeeBreakTimeBase" class="block text-sm font-medium text-gray-700">Horário de Pausa:</label>
-                        <p id="horarioPausaHelpText" class="text-xs text-gray-500 mb-1"></p>
-                        <select id="employeeBreakTimeBase" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                            <option value="15:00:00">15:00</option>
-                            <option value="16:00:00">16:00</option>
-                            <option value="17:00:00">17:00</option>
-                            <option value="18:00:00">18:00</option>
-                            <option value="19:00:00">19:00</option>
-                            </select>
-                    </div>
-                    <div id="trocadorResponsavelField" class="mb-4" style="display: none;">
-                        <label for="employeeTrocador" class="block text-sm font-medium text-gray-700">Trocador Responsável:</label>
-                        <select id="employeeTrocador" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">Salvar</button>
-                </div>
-            </form>
         </div>
-    </div>
 
     <div id="toast" class="toast">Mensagem</div>
 
@@ -279,60 +148,17 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YW5qeWNsaWpraWJpa2Z2YWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNjYwNTAsImV4cCI6MjA2Mjc0MjA1MH0.Dv26rQqtPZrgBCfUknPiXFbVAKZjIWYulIa4srlasZk';
         const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Elementos do DOM Globais
-        const attendanceDateInput = document.getElementById('attendanceDate');
-        const toastElement = document.getElementById('toast');
-        
-        // Elementos do Modal de Funcionário
-        const employeeModal = document.getElementById('employeeModal');
-        const openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModalBtn');
-        const openAddEmployeeModalBtnSecondary = document.getElementById('openAddEmployeeModalBtnSecondary');
-        const closeEmployeeModalBtn = document.getElementById('closeEmployeeModalBtn');
-        const employeeForm = document.getElementById('employeeForm');
-        const employeeModalTitle = document.getElementById('employeeModalTitle');
-        const employeeIdInput = document.getElementById('employeeId');
-        const employeeNameInput = document.getElementById('employeeName');
-        const employeeTypeSelect = document.getElementById('employeeType');
-        // Campos dentro do modal
-        const horarioPausaField = document.getElementById('horarioPausaField');
-        const horarioPausaHelpText = document.getElementById('horarioPausaHelpText');
-        const employeeBreakTimeBaseSelect = document.getElementById('employeeBreakTimeBase');
-        const trocadorResponsavelField = document.getElementById('trocadorResponsavelField');
-        const employeeTrocadorSelect = document.getElementById('employeeTrocador');
-        
-        // Elementos da Seção Registrar Presenças
-        const attendanceEmployeeSelect = document.getElementById('attendanceEmployeeSelect');
-        const attendanceStatusSelect = document.getElementById('attendanceStatus');
-        const registerAttendanceBtn = document.getElementById('registerAttendanceBtn');
-        const employeeSummaryContainer = document.getElementById('employeeSummaryContainer');
-        const viewModeListBtn = document.getElementById('viewModeList');
-        const viewModeGalleryBtn = document.getElementById('viewModeGallery');
-        const sortAZBtn = document.getElementById('sortAZ');
-        const sortZABtn = document.getElementById('sortZA');
-
-        // Elementos da Seção Horários de Pausa
-        const scheduleDateDisplayPausa = document.getElementById('scheduleDateDisplayPausa');
-        const scheduleDateDisplayForTitle = document.getElementById('scheduleDateDisplayForTitle');
-        const printableAreaHeader = document.getElementById('printableAreaHeader'); 
-        const breakScheduleTable = document.getElementById('breakScheduleTable');
-        const breakScheduleTableBody = document.getElementById('breakScheduleTableBody');
-        const exportPdfBtn = document.getElementById('exportPdfBtn');
-        const exportPngBtn = document.getElementById('exportPngBtn');
-        const printScheduleBtn = document.getElementById('printScheduleBtn');
-        const printableAreaFooter = document.getElementById('printableAreaFooter');
-
-
-        // Botões de Navegação e Seções
-        const navButtons = {
-            registrarPresencas: document.getElementById('navRegistrarPresencas'),
-            horariosPausa: document.getElementById('navHorariosPausa'),
-            dashboard: document.getElementById('navDashboard'),
-        };
-        const sections = {
-            registrarPresencas: document.getElementById('sectionRegistrarPresencas'),
-            horariosPausa: document.getElementById('sectionHorariosPausa'),
-            dashboard: document.getElementById('sectionDashboard'),
-        };
+        // Variáveis globais para elementos do DOM (serão atribuídas em initializeApp)
+        let attendanceDateInput, toastElement, employeeModal, openAddEmployeeModalBtn, 
+            openAddEmployeeModalBtnSecondary, closeEmployeeModalBtn, employeeForm, 
+            employeeModalTitle, employeeIdInput, employeeNameInput, employeeTypeSelect, 
+            horarioPausaField, horarioPausaHelpText, employeeBreakTimeBaseSelect, 
+            trocadorResponsavelField, employeeTrocadorSelect, attendanceEmployeeSelect, 
+            attendanceStatusSelect, registerAttendanceBtn, employeeSummaryContainer, 
+            viewModeListBtn, viewModeGalleryBtn, sortAZBtn, sortZABtn, 
+            scheduleDateDisplayPausa, scheduleDateDisplayForTitle, printableAreaHeader, 
+            breakScheduleTable, breakScheduleTableBody, exportPdfBtn, exportPngBtn, 
+            printScheduleBtn, printableAreaFooter, navButtons, sections;
 
         let allEmployees = [];
         let allTrocadores = [];
@@ -343,17 +169,19 @@
 
         // --- Funções Utilitárias ---
         function showToast(message, type = 'success') {
-            toastElement.textContent = message;
-            toastElement.className = 'toast show'; 
-            toastElement.classList.remove('bg-red-500', 'bg-green-500');
-            if (type === 'error') {
-                toastElement.classList.add('bg-red-500');
-            } else {
-                toastElement.classList.add('bg-green-500');
+            if (toastElement) {
+                toastElement.textContent = message;
+                toastElement.className = 'toast show'; 
+                toastElement.classList.remove('bg-red-500', 'bg-green-500');
+                if (type === 'error') {
+                    toastElement.classList.add('bg-red-500');
+                } else {
+                    toastElement.classList.add('bg-green-500');
+                }
+                setTimeout(() => {
+                    toastElement.className = 'toast';
+                }, 3000);
             }
-            setTimeout(() => {
-                toastElement.className = 'toast';
-            }, 3000);
         }
 
         function formatDate(dateString) { 
@@ -367,12 +195,13 @@
         // --- Navegação entre Seções ---
         function showSection(sectionKey) {
             Object.keys(sections).forEach(key => {
-                sections[key].classList.add('section-hidden');
-                navButtons[key].classList.remove('active');
+                if (sections[key]) sections[key].classList.add('section-hidden');
+                if (navButtons[key]) navButtons[key].classList.remove('active');
             });
-            sections[sectionKey].classList.remove('section-hidden');
-            navButtons[sectionKey].classList.add('active');
-            if (sectionKey === 'horariosPausa' || sectionKey === 'registrarPresencas') {
+            if (sections[sectionKey]) sections[sectionKey].classList.remove('section-hidden');
+            if (navButtons[sectionKey]) navButtons[sectionKey].classList.add('active');
+            
+            if (attendanceDateInput && (sectionKey === 'horariosPausa' || sectionKey === 'registrarPresencas')) {
                  const currentDate = attendanceDateInput.value;
                  if(currentDate) fetchAttendanceForDate(currentDate);
             }
@@ -380,6 +209,7 @@
         
         // --- Lógica de Visualização e Ordenação de Funcionários ---
         function updateEmployeeDisplayControls() {
+            if (!viewModeListBtn || !viewModeGalleryBtn || !sortAZBtn || !sortZABtn) return;
             viewModeListBtn.classList.toggle('active', currentEmployeeView === 'list');
             viewModeGalleryBtn.classList.toggle('active', currentEmployeeView === 'gallery');
             sortAZBtn.classList.toggle('active', currentEmployeeSort === 'az');
@@ -399,6 +229,7 @@
         }
         
         function renderEmployeeSummary() {
+            if (!employeeSummaryContainer) return;
             employeeSummaryContainer.innerHTML = '';
             const sortedEmployees = sortEmployees(allEmployees, currentEmployeeSort);
 
@@ -482,30 +313,6 @@
             });
         }
         
-        viewModeListBtn.addEventListener('click', () => {
-            currentEmployeeView = 'list';
-            updateEmployeeDisplayControls();
-            renderEmployeeSummary();
-        });
-
-        viewModeGalleryBtn.addEventListener('click', () => {
-            currentEmployeeView = 'gallery';
-            updateEmployeeDisplayControls();
-            renderEmployeeSummary();
-        });
-
-        sortAZBtn.addEventListener('click', () => {
-            currentEmployeeSort = 'az';
-            updateEmployeeDisplayControls();
-            renderEmployeeSummary();
-        });
-
-        sortZABtn.addEventListener('click', () => {
-            currentEmployeeSort = 'za';
-            updateEmployeeDisplayControls();
-            renderEmployeeSummary();
-        });
-
         // --- Funções de Gerenciamento de Funcionários (Modal e CRUD) ---
         async function fetchEmployees() {
             const { data, error } = await sbClient 
@@ -532,6 +339,7 @@
         }
         
         function populateTrocadorSelect(selectElement, selectedTrocadorId = null) {
+            if (!selectElement) return;
             selectElement.innerHTML = '<option value="">Nenhum</option>'; 
             allTrocadores.forEach(trocador => {
                 const option = document.createElement('option');
@@ -545,28 +353,18 @@
         }
         
         function openEmployeeModalForAdd() {
+            if (!employeeModalTitle || !employeeForm || !employeeIdInput || !employeeTypeSelect || !employeeTrocadorSelect) return;
             employeeModalTitle.textContent = 'Adicionar Funcionário';
             employeeForm.reset();
             employeeIdInput.value = '';
             employeeTypeSelect.value = 'operador'; 
             handleEmployeeTypeChange(); 
             populateTrocadorSelect(employeeTrocadorSelect);
-            employeeModal.style.display = 'flex';
+            if (employeeModal) employeeModal.style.display = 'flex';
         }
-        openAddEmployeeModalBtn.addEventListener('click', openEmployeeModalForAdd);
-        openAddEmployeeModalBtnSecondary.addEventListener('click', openEmployeeModalForAdd);
-
-        closeEmployeeModalBtn.addEventListener('click', () => {
-            employeeModal.style.display = 'none';
-        });
-
-        window.addEventListener('click', (event) => {
-            if (event.target === employeeModal) {
-                employeeModal.style.display = 'none';
-            }
-        });
         
         function handleEmployeeTypeChange() {
+            if (!employeeTypeSelect || !horarioPausaField || !horarioPausaHelpText || !trocadorResponsavelField || !employeeTrocadorSelect || !employeeBreakTimeBaseSelect) return;
             const selectedType = employeeTypeSelect.value;
             if (selectedType === 'operador') {
                 horarioPausaField.style.display = 'block';
@@ -584,11 +382,11 @@
                 employeeTrocadorSelect.value = ''; 
             }
         }
-        employeeTypeSelect.addEventListener('change', handleEmployeeTypeChange);
 
-
-        employeeForm.addEventListener('submit', async (e) => {
+        async function handleEmployeeFormSubmit(e) {
             e.preventDefault();
+            if (!employeeIdInput || !employeeNameInput || !employeeTypeSelect || !employeeBreakTimeBaseSelect || !employeeTrocadorSelect || !employeeModal) return;
+
             const id = employeeIdInput.value;
             const nome = employeeNameInput.value;
             const tipo = employeeTypeSelect.value;
@@ -620,9 +418,10 @@
                 employeeModal.style.display = 'none';
                 await refreshAllData(); 
             }
-        });
+        }
 
         async function handleEditEmployee(event) {
+            if (!employeeModalTitle || !employeeIdInput || !employeeNameInput || !employeeTypeSelect || !employeeTrocadorSelect || !employeeModal) return;
             const id = event.currentTarget.dataset.id; 
             const employee = allEmployees.find(emp => emp.id === id);
             if (!employee) return;
@@ -679,6 +478,7 @@
 
         // --- Funções de Registro de Presença ---
         function populateAttendanceEmployeeSelect(employees) {
+            if (!attendanceEmployeeSelect) return;
             attendanceEmployeeSelect.innerHTML = '<option value="">Selecione um funcionário</option>';
             const sortedForSelect = sortEmployees(employees, 'az');
             sortedForSelect.forEach(emp => {
@@ -690,6 +490,7 @@
         }
 
         async function registerAttendance() { 
+            if (!attendanceEmployeeSelect || !attendanceDateInput || !attendanceStatusSelect) return;
             const funcionario_id = attendanceEmployeeSelect.value;
             const data = attendanceDateInput.value;
             const status = attendanceStatusSelect.value; 
@@ -734,21 +535,12 @@
                 await fetchAttendanceForDate(data); 
             }
         }
-        registerAttendanceBtn.addEventListener('click', registerAttendance);
         
         function updateDateDisplays(dateStr) {
             const formattedDt = formatDate(dateStr);
             if (scheduleDateDisplayPausa) scheduleDateDisplayPausa.textContent = formattedDt; 
             if (scheduleDateDisplayForTitle) scheduleDateDisplayForTitle.textContent = formattedDt;
         }
-
-        attendanceDateInput.addEventListener('change', (e) => {
-            const newDate = e.target.value;
-            if (newDate) {
-                updateDateDisplays(newDate);
-                fetchAttendanceForDate(newDate);
-            }
-        });
 
         // --- Funções de Horário de Pausa ---
         async function fetchAttendanceForDate(date) {
@@ -792,6 +584,7 @@
         }
 
         function generateAndRenderBreakSchedule(dateStr) {
+            if (!breakScheduleTable || !breakScheduleTableBody) return;
             const tableHeader = breakScheduleTable.querySelector('thead');
             if (tableHeader) {
                 tableHeader.innerHTML = `
@@ -833,7 +626,6 @@
             
             let hasAnyEntry = false;
 
-            // Renderiza Trocadores e seus Operadores
             systemTrocadores.forEach(trocador => {
                 hasAnyEntry = true;
                 const tr = document.createElement('tr');
@@ -853,10 +645,9 @@
                         return hourA - hourB;
                     });
 
-                // Para operadores, o slot 15h é sempre "-"
-                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`;
+                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`; 
                 
-                const operatorBreakSlotsColumns = [16, 17, 18, 19]; // Alocação começa às 16h
+                const operatorBreakSlotsColumns = [16, 17, 18, 19]; 
                 let operatorToPlaceIndex = 0; 
 
                 operatorBreakSlotsColumns.forEach(slotColumnHour => {
@@ -878,7 +669,6 @@
                 breakScheduleTableBody.appendChild(tr);
             });
 
-            // Renderiza Outras Lideranças (Supervisor, Líder, Treinador)
             otherLeadersPresent.forEach(leader => {
                 hasAnyEntry = true;
                 const tr = document.createElement('tr');
@@ -898,100 +688,132 @@
                 breakScheduleTableBody.appendChild(tr);
             });
 
-
             if (!hasAnyEntry) { 
                  breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Nenhum funcionário (trocador ou liderança) para exibir na escala de pausa.</td></tr>';
             }
         }
 
-
         // --- Funções de Exportação ---
-        exportPdfBtn.addEventListener('click', () => {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape' });
-            const dateForTitle = formatDate(attendanceDateInput.value || new Date().toISOString().slice(0,10));
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const footerText = "ScWeb - 2025 @ Rafael Scarpato";
-            
-            doc.setFontSize(18);
-            doc.text("Horários de Janta", pageWidth / 2, 15, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text(`Horário de Pausas e Operadores - ${dateForTitle}`, pageWidth / 2, 22, { align: 'center' });
+        function setupExportButtonListeners() {
+            if (exportPdfBtn) exportPdfBtn.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: 'landscape' });
+                const dateForTitle = formatDate(attendanceDateInput.value || new Date().toISOString().slice(0,10));
+                const pageHeight = doc.internal.pageSize.getHeight();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const footerText = "ScWeb - 2025 @ Rafael Scarpato";
+                
+                doc.setFontSize(18);
+                doc.text("Horários de Janta", pageWidth / 2, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Horário de Pausas e Operadores - ${dateForTitle}`, pageWidth / 2, 22, { align: 'center' });
 
-            doc.autoTable({
-                html: '#breakScheduleTable', startY: 30, theme: 'grid',
-                headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' }, 
-                styles: { font: 'Inter', cellPadding: 2.5, fontSize: 9, halign: 'center', valign: 'middle' },
-                columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 50 } }, 
-                didParseCell: function (data) {
-                    if (data.column.index > 0 || data.section === 'head') data.cell.styles.halign = 'center';
-                    if (data.column.index === 0 && data.section === 'body' && data.cell.text[0]) {
-                        data.cell.text[0] = data.cell.text[0].split(' (')[0]; 
-                    }
+                doc.autoTable({
+                    html: '#breakScheduleTable', startY: 30, theme: 'grid',
+                    headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' }, 
+                    styles: { font: 'Inter', cellPadding: 2.5, fontSize: 9, halign: 'center', valign: 'middle' },
+                    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 50 } }, 
+                    didParseCell: function (data) {
+                        if (data.column.index > 0 || data.section === 'head') data.cell.styles.halign = 'center';
+                        if (data.column.index === 0 && data.section === 'body' && data.cell.text[0]) {
+                            data.cell.text[0] = data.cell.text[0].split(' (')[0]; 
+                        }
+                        const employeeNameInCell = data.cell.text[0]?.split(' (')[0].trim().toUpperCase();
+                        const isTrocador = allEmployees.find(e => e.nome.toUpperCase() === employeeNameInCell && e.tipo === 'trocador');
+                        const isOtherLeader = allEmployees.find(e => e.nome.toUpperCase() === employeeNameInCell && ['supervisor', 'lider', 'treinador'].includes(e.tipo));
 
-                    const originalText = data.cell.raw?.textContent || ""; 
-                    if (originalText.includes(allEmployees.find(e => e.nome === data.cell.text[0] && e.tipo === 'trocador')?.nome)) { 
-                        if (data.column.index === 6) { 
-                             if (data.cell.text[0] && data.cell.text[0].includes("AUSENTE")) { 
-                                data.cell.styles.fillColor = '#fee2e2'; data.cell.styles.textColor = '#ef4444';
-                            } else if (data.cell.text[0] && data.cell.text[0] !== '-') {
-                                data.cell.styles.fillColor = '#dbeafe'; data.cell.styles.textColor = '#1e40af';
+                        if (isTrocador) { 
+                            if (data.column.index === 6) { 
+                                 if (data.cell.text[0] && data.cell.text[0].includes("AUSENTE")) { 
+                                    data.cell.styles.fillColor = '#fee2e2'; data.cell.styles.textColor = '#ef4444';
+                                } else if (data.cell.text[0] && data.cell.text[0] !== '-') {
+                                    data.cell.styles.fillColor = '#dbeafe'; data.cell.styles.textColor = '#1e40af';
+                                }
                             }
                         }
-                    }
-                    else if (allEmployees.find(e => e.nome === data.cell.text[0] && ['supervisor', 'lider', 'treinador'].includes(e.tipo))) {
-                        if (data.cell.text[0] && data.cell.text[0] !== '-' && data.column.index > 0 && data.column.index < 6) { 
-                            data.cell.styles.fillColor = '#f3e8ff'; data.cell.styles.textColor = '#7e22ce'; 
+                        else if (isOtherLeader) {
+                            if (data.cell.text[0] && data.cell.text[0] !== '-' && data.column.index > 0 && data.column.index < 7) { 
+                                if (data.cell.text[0].toUpperCase() === isOtherLeader.nome.toUpperCase()) {
+                                    data.cell.styles.fillColor = '#f3e8ff'; data.cell.styles.textColor = '#7e22ce'; 
+                                }
+                            }
                         }
+                    },
+                    didDrawPage: function (data) {
+                        doc.setFontSize(8);
+                        doc.setTextColor(100);
+                        const textWidth = doc.getStringUnitWidth(footerText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+                        const textX = (pageWidth - textWidth) / 2;
+                        doc.text(footerText, textX, pageHeight - 10);
                     }
-                },
-                didDrawPage: function (data) {
-                    doc.setFontSize(8);
-                    doc.setTextColor(100);
-                    const textWidth = doc.getStringUnitWidth(footerText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
-                    const textX = (pageWidth - textWidth) / 2;
-                    doc.text(footerText, textX, pageHeight - 10);
+                });
+                doc.save(`horarios_pausa_${(attendanceDateInput.value || 'hoje').replace(/-/g, '_')}.pdf`);
+                showToast('PDF gerado com sucesso!');
+            });
+
+            if (exportPngBtn) exportPngBtn.addEventListener('click', () => {
+                const printableArea = document.getElementById('printableArea');
+                if (!printableArea || !printableAreaHeader || !printableAreaFooter) return;
+
+                const originalPrintableAreaOverflow = printableArea.style.overflow;
+                const originalPrintableAreaHeight = printableArea.style.height;
+                const originalTableOverflow = breakScheduleTable ? breakScheduleTable.style.overflow : 'auto';
+                const originalTableHeight = breakScheduleTable ? breakScheduleTable.style.height : 'auto';
+
+                printableArea.style.overflow = 'visible';
+                printableArea.style.height = 'auto';
+                if (breakScheduleTable) {
+                    breakScheduleTable.style.overflow = 'visible';
+                    breakScheduleTable.style.height = 'auto';
                 }
+                
+                printableAreaHeader.classList.add('capture-visible');
+                printableAreaFooter.style.display = 'block'; 
+
+                html2canvas(printableArea, { 
+                    scale: 2, useCORS: true, backgroundColor: '#ffffff',
+                    width: printableArea.scrollWidth, height: printableArea.scrollHeight
+                }).then(canvas => {
+                    printableAreaHeader.classList.remove('capture-visible');
+                    printableAreaFooter.style.display = 'none';
+                    printableArea.style.overflow = originalPrintableAreaOverflow;
+                    printableArea.style.height = originalPrintableAreaHeight;
+                    if (breakScheduleTable) {
+                        breakScheduleTable.style.overflow = originalTableOverflow;
+                        breakScheduleTable.style.height = originalTableHeight;
+                    }
+
+                    const link = document.createElement('a');
+                    link.download = `horarios_pausa_${(attendanceDateInput.value || 'hoje').replace(/-/g, '_')}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    showToast('PNG gerado com sucesso!');
+                }).catch(err => {
+                    console.error("Erro ao gerar PNG:", err);
+                    showToast('Erro ao gerar PNG.', 'error');
+                    printableAreaHeader.classList.remove('capture-visible');
+                    printableAreaFooter.style.display = 'none'; 
+                    printableArea.style.overflow = originalPrintableAreaOverflow;
+                    printableArea.style.height = originalPrintableAreaHeight;
+                    if (breakScheduleTable) {
+                        breakScheduleTable.style.overflow = originalTableOverflow;
+                        breakScheduleTable.style.height = originalTableHeight;
+                    }
+                });
             });
-            doc.save(`horarios_pausa_${(attendanceDateInput.value || 'hoje').replace(/-/g, '_')}.pdf`);
-            showToast('PDF gerado com sucesso!');
-        });
-
-        exportPngBtn.addEventListener('click', () => {
-            const printableArea = document.getElementById('printableArea');
-            const titleHeader = document.getElementById('printableAreaHeader'); 
-
-            if(titleHeader) titleHeader.classList.add('capture-visible');
-            printableAreaFooter.style.display = 'block'; 
-
-            html2canvas(printableArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
-                if(titleHeader) titleHeader.classList.remove('capture-visible');
-                printableAreaFooter.style.display = 'none';
-
-                const link = document.createElement('a');
-                link.download = `horarios_pausa_${(attendanceDateInput.value || 'hoje').replace(/-/g, '_')}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                showToast('PNG gerado com sucesso!');
-            }).catch(err => {
-                console.error("Erro ao gerar PNG:", err);
-                showToast('Erro ao gerar PNG.', 'error');
-                if(titleHeader) titleHeader.classList.remove('capture-visible');
-                printableAreaFooter.style.display = 'none'; 
-            });
-        });
         
-        printScheduleBtn.addEventListener('click', () => { 
-            const titleHeader = document.getElementById('printableAreaHeader');
-            if(titleHeader) titleHeader.classList.add('capture-visible'); 
-            printableAreaFooter.style.display = 'block';
-            window.print(); 
-            setTimeout(() => {
-                 if(titleHeader) titleHeader.classList.remove('capture-visible');
-                 printableAreaFooter.style.display = 'none'; 
-            }, 1000); 
-        });
+            if (printScheduleBtn) printScheduleBtn.addEventListener('click', () => { 
+                if (!printableAreaHeader || !printableAreaFooter) return;
+                printableAreaHeader.classList.add('capture-visible'); 
+                printableAreaFooter.style.display = 'block';
+                window.print(); 
+                setTimeout(() => {
+                     printableAreaHeader.classList.remove('capture-visible');
+                     printableAreaFooter.style.display = 'none'; 
+                }, 1000); 
+            });
+        }
+
 
         // --- Inicialização ---
         async function refreshAllData() {
@@ -1009,15 +831,171 @@
             updateEmployeeDisplayControls();
         }
 
+        function initializeDOMReferences() {
+            attendanceDateInput = document.getElementById('attendanceDate');
+            toastElement = document.getElementById('toast');
+            employeeModal = document.getElementById('employeeModal');
+            openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModalBtn');
+            openAddEmployeeModalBtnSecondary = document.getElementById('openAddEmployeeModalBtnSecondary');
+            closeEmployeeModalBtn = document.getElementById('closeEmployeeModalBtn');
+            employeeForm = document.getElementById('employeeForm');
+            employeeModalTitle = document.getElementById('employeeModalTitle');
+            employeeIdInput = document.getElementById('employeeId');
+            employeeNameInput = document.getElementById('employeeName');
+            employeeTypeSelect = document.getElementById('employeeType');
+            horarioPausaField = document.getElementById('horarioPausaField');
+            horarioPausaHelpText = document.getElementById('horarioPausaHelpText');
+            employeeBreakTimeBaseSelect = document.getElementById('employeeBreakTimeBase');
+            trocadorResponsavelField = document.getElementById('trocadorResponsavelField');
+            employeeTrocadorSelect = document.getElementById('employeeTrocador');
+            attendanceEmployeeSelect = document.getElementById('attendanceEmployeeSelect');
+            attendanceStatusSelect = document.getElementById('attendanceStatus');
+            registerAttendanceBtn = document.getElementById('registerAttendanceBtn');
+            employeeSummaryContainer = document.getElementById('employeeSummaryContainer');
+            viewModeListBtn = document.getElementById('viewModeList');
+            viewModeGalleryBtn = document.getElementById('viewModeGallery');
+            sortAZBtn = document.getElementById('sortAZ');
+            sortZABtn = document.getElementById('sortZA');
+            scheduleDateDisplayPausa = document.getElementById('scheduleDateDisplayPausa');
+            scheduleDateDisplayForTitle = document.getElementById('scheduleDateDisplayForTitle');
+            printableAreaHeader = document.getElementById('printableAreaHeader');
+            breakScheduleTable = document.getElementById('breakScheduleTable');
+            breakScheduleTableBody = document.getElementById('breakScheduleTableBody');
+            exportPdfBtn = document.getElementById('exportPdfBtn');
+            exportPngBtn = document.getElementById('exportPngBtn');
+            printScheduleBtn = document.getElementById('printScheduleBtn');
+            printableAreaFooter = document.getElementById('printableAreaFooter');
+
+            navButtons = {
+                registrarPresencas: document.getElementById('navRegistrarPresencas'),
+                horariosPausa: document.getElementById('navHorariosPausa'),
+                dashboard: document.getElementById('navDashboard'),
+            };
+            sections = {
+                registrarPresencas: document.getElementById('sectionRegistrarPresencas'),
+                horariosPausa: document.getElementById('sectionHorariosPausa'),
+                dashboard: document.getElementById('sectionDashboard'),
+            };
+        }
+        
+        function initializeAppEventListeners() {
+            if (openAddEmployeeModalBtn) openAddEmployeeModalBtn.addEventListener('click', openEmployeeModalForAdd);
+            if (openAddEmployeeModalBtnSecondary) openAddEmployeeModalBtnSecondary.addEventListener('click', openEmployeeModalForAdd);
+            if (closeEmployeeModalBtn) closeEmployeeModalBtn.addEventListener('click', () => { if (employeeModal) employeeModal.style.display = 'none'; });
+            
+            window.addEventListener('click', (event) => { if (event.target === employeeModal && employeeModal) employeeModal.style.display = 'none'; });
+            
+            if (employeeTypeSelect) employeeTypeSelect.addEventListener('change', handleEmployeeTypeChange);
+            if (employeeForm) employeeForm.addEventListener('submit', handleEmployeeFormSubmit);
+            if (registerAttendanceBtn) registerAttendanceBtn.addEventListener('click', registerAttendance);
+            
+            if (attendanceDateInput) attendanceDateInput.addEventListener('change', (e) => {
+                const newDate = e.target.value;
+                if (newDate) { updateDateDisplays(newDate); fetchAttendanceForDate(newDate); }
+            });
+
+            if (navButtons.registrarPresencas) navButtons.registrarPresencas.addEventListener('click', () => showSection('registrarPresencas'));
+            if (navButtons.horariosPausa) navButtons.horariosPausa.addEventListener('click', () => showSection('horariosPausa'));
+            if (navButtons.dashboard) navButtons.dashboard.addEventListener('click', () => showSection('dashboard'));
+
+            if (viewModeListBtn) viewModeListBtn.addEventListener('click', () => { currentEmployeeView = 'list'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
+            if (viewModeGalleryBtn) viewModeGalleryBtn.addEventListener('click', () => { currentEmployeeView = 'gallery'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
+            if (sortAZBtn) sortAZBtn.addEventListener('click', () => { currentEmployeeSort = 'az'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
+            if (sortZABtn) sortZABtn.addEventListener('click', () => { currentEmployeeSort = 'za'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
+
+            setupExportButtonListeners(); // Configura os listeners dos botões de exportação
+        }
+
+
         async function initializeApp() {
+            // Injeta o HTML das seções que podem ter sido movidas ou simplificadas
+            document.getElementById('sectionRegistrarPresencas').innerHTML = `
+                <div class="text-center mb-6">
+                    <label for="attendanceDate" class="block text-sm font-medium text-gray-700 mb-1">Data Selecionada</label>
+                    <input type="date" id="attendanceDate" class="mx-auto p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 w-full max-w-xs">
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-lg space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <h2 class="text-xl font-semibold text-gray-700">Registrar Presença/Ausência</h2>
+                            <button id="openAddEmployeeModalBtn" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out">
+                                <i data-lucide="user-plus" class="mr-2 h-5 w-5"></i>Novo Funcionário
+                            </button>
+                        </div>
+                        <div>
+                            <label for="attendanceEmployeeSelect" class="block text-sm font-medium text-gray-700 mb-1">Selecione o Funcionário:</label>
+                            <select id="attendanceEmployeeSelect" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500"></select>
+                        </div>
+                        <div>
+                            <label for="attendanceStatus" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+                            <select id="attendanceStatus" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="presente">Presente</option> <option value="ausente">Ausente</option>
+                            </select>
+                        </div>
+                        <button id="registerAttendanceBtn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-150 ease-in-out">Registrar</button>
+                    </div>
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow">
+                            <h3 class="font-bold mb-1">Instruções</h3>
+                            <p class="text-sm">Use o formulário ao lado para registrar a presença ou ausência de um funcionário...</p>
+                        </div>
+                        <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow">
+                            <h3 class="font-bold mb-1">Como funciona</h3>
+                            <p class="text-sm">Operadores: "Horário de Pausa Base" é referência para Janeiro e rotaciona mensalmente...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <h2 class="text-xl font-semibold text-gray-700">Resumo de Presenças do Dia</h2>
+                        <div class="flex flex-wrap gap-2 items-center w-full sm:w-auto justify-start sm:justify-end">
+                            <div class="flex gap-1"><button id="viewModeList" class="control-button" title="Visualizar como Lista"><i data-lucide="list"></i></button><button id="viewModeGallery" class="control-button active" title="Visualizar como Galeria"><i data-lucide="layout-grid"></i></button></div>
+                            <div class="flex gap-1"><button id="sortAZ" class="control-button active" title="Ordenar A-Z"><i data-lucide="sort-asc"></i> A-Z</button><button id="sortZA" class="control-button" title="Ordenar Z-A"><i data-lucide="sort-desc"></i> Z-A</button></div>
+                            <button id="openAddEmployeeModalBtnSecondary" class="w-full sm:w-auto text-blue-500 hover:text-blue-700 font-semibold py-1.5 px-3 rounded-lg inline-flex items-center justify-center text-sm border border-blue-500 hover:bg-blue-50"><i data-lucide="plus-circle" class="mr-1.5 h-4 w-4"></i>Adicionar Funcionário</button>
+                        </div>
+                    </div>
+                    <div id="employeeSummaryContainer"></div>
+                </div>`;
+            document.getElementById('sectionHorariosPausa').innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-2 mb-4 no-print items-center">
+                        <h2 class="text-xl font-semibold text-gray-700 mr-auto">Horários de Pausa (<span id="scheduleDateDisplayPausa"></span>)</h2>
+                        <button id="exportPdfBtn" class="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out"><i data-lucide="file-down" class="mr-2 h-5 w-5"></i>Exportar PDF</button>
+                        <button id="exportPngBtn" class="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out"><i data-lucide="image" class="mr-2 h-5 w-5"></i>Exportar PNG</button>
+                        <button id="printScheduleBtn" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out"><i data-lucide="printer" class="mr-2 h-5 w-5"></i>Imprimir</button>
+                    </div>
+                    <div id="printableArea" class="overflow-x-auto bg-white p-0 md:p-4 rounded">
+                        <div id="printableAreaHeader" class="text-center mb-4 print-only"><h2 class="text-2xl font-bold text-gray-800">Horários de Janta</h2><h3 class="text-lg font-semibold text-gray-600">Horário de Pausas e Operadores - <span id="scheduleDateDisplayForTitle"></span></h3></div>
+                        <table id="breakScheduleTable" class="min-w-full bg-white rounded-lg shadow mb-4"><thead></thead><tbody id="breakScheduleTableBody" class="divide-y divide-gray-200"></tbody></table>
+                        <div id="printableAreaFooter" class="text-center text-xs text-gray-600 pt-4 mt-4 border-t border-gray-200">ScWeb - 2025 @ Rafael Scarpato</div>
+                    </div>
+                </div>`;
+            document.getElementById('sectionDashboard').innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard</h2>
+                    <i data-lucide="construction" class="h-16 w-16 text-gray-400 mx-auto mb-2"></i>
+                    <p class="text-gray-500">Esta seção está em desenvolvimento.</p>
+                </div>`;
+            document.getElementById('employeeModal').innerHTML = `
+                <div class="modal-content">
+                    <span class="close-button" id="closeEmployeeModalBtn">&times;</span>
+                    <h3 id="employeeModalTitle" class="text-xl font-semibold mb-4">Adicionar Funcionário</h3>
+                    <form id="employeeForm">
+                        <input type="hidden" id="employeeId">
+                        <div class="mb-4"><label for="employeeName" class="block text-sm font-medium text-gray-700">Nome:</label><input type="text" id="employeeName" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
+                        <div class="mb-4"><label for="employeeType" class="block text-sm font-medium text-gray-700">Tipo:</label><select id="employeeType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="operador">Operador</option><option value="trocador">Trocador (Supervisor de Linha)</option><option value="supervisor">Supervisor</option><option value="lider">Líder</option><option value="treinador">Treinador</option></select></div>
+                        <div id="operadorFieldsContainer"><div id="horarioPausaField" class="mb-4" style="display: none;"><label for="employeeBreakTimeBase" class="block text-sm font-medium text-gray-700">Horário de Pausa:</label><p id="horarioPausaHelpText" class="text-xs text-gray-500 mb-1"></p><select id="employeeBreakTimeBase" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="15:00:00">15:00</option><option value="16:00:00">16:00</option><option value="17:00:00">17:00</option><option value="18:00:00">18:00</option><option value="19:00:00">19:00</option></select></div><div id="trocadorResponsavelField" class="mb-4" style="display: none;"><label for="employeeTrocador" class="block text-sm font-medium text-gray-700">Trocador Responsável:</label><select id="employeeTrocador" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select></div></div>
+                        <div class="flex justify-end"><button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">Salvar</button></div>
+                    </form>
+                </div>`;
+
+            initializeDOMReferences(); // Agora que o HTML foi injetado, podemos pegar as referências
+            initializeAppEventListeners(); // E configurar os listeners
+
             const defaultDate = "2025-05-14"; 
-            attendanceDateInput.value = defaultDate; 
+            if (attendanceDateInput) attendanceDateInput.value = defaultDate; 
             updateDateDisplays(defaultDate);
             
-            navButtons.registrarPresencas.addEventListener('click', () => showSection('registrarPresencas'));
-            navButtons.horariosPausa.addEventListener('click', () => showSection('horariosPausa'));
-            navButtons.dashboard.addEventListener('click', () => showSection('dashboard'));
-
             await refreshAllData(); 
             showSection('registrarPresencas'); 
             lucide.createIcons(); 
