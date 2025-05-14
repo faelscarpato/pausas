@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Absenteísmo e Pausas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #e5e7eb; /* Tailwind gray-200 */
+        }
+        .modal {
+            display: none; position: fixed; z-index: 100;
+            left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.5);
+            align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background-color: #ffffff; margin: auto; padding: 20px;
+            border: 1px solid #888; width: 80%; max-width: 500px;
+            border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .close-button {
+            color: #aaa; float: right; font-size: 28px;
+            font-weight: bold; cursor: pointer;
+        }
+        .close-button:hover, .close-button:focus {
+            color: black; text-decoration: none; cursor: pointer;
+        }
+        .toast {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%); background-color: #333;
+            color: white; padding: 10px 20px; border-radius: 5px;
+            z-index: 1000; opacity: 0; transition: opacity 0.5s ease-in-out;
+        }
+        .toast.show { opacity: 1; }
+
+        .nav-button {
+            display: inline-flex; align-items: center; padding: 0.5rem 1rem;
+            border-radius: 0.375rem; color: #4b5563; font-weight: 500;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .nav-button:hover { background-color: #d1d5db; }
+        .nav-button.active { background-color: #3b82f6; color: white; }
+        .nav-button.active:hover { background-color: #2563eb; }
+        .nav-button i { margin-right: 0.5rem; }
+
+        .control-button {
+            padding: 0.375rem 0.75rem; /* py-1.5 px-3 */
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            border-radius: 0.375rem; /* rounded-md */
+            background-color: white;
+            color: #4b5563; /* text-gray-600 */
+            font-size: 0.875rem; /* text-sm */
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+        }
+        .control-button:hover {
+            background-color: #f3f4f6; /* hover:bg-gray-100 */
+        }
+        .control-button.active {
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+            border-color: #3b82f6; /* border-blue-500 */
+        }
+        .control-button i {
+            margin-right: 0.375rem; /* mr-1.5 */
+        }
+
+        .print-only { display: none; } 
+        .capture-visible { display: block !important; } 
+
+        @media print {
+            body { background-color: #fff !important; }
+            body * { visibility: hidden; }
+            .printable-content, .printable-content * { visibility: visible; }
+            .printable-content { position: absolute; left: 0; top: 0; width: 100%; }
+            @page { size: landscape; margin: 1cm; }
+            .no-print { display: none !important; }
+            .print-only { display: block !important; } 
+            .bg-gray-800 { background-color: #1f2937 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .text-white { color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #printableAreaFooter { display: block !important; visibility: visible !important; }
+        }
+        #printableAreaFooter { display: none; } 
+        .section-hidden { display: none !important; }
+    </style>
+</head>
+<body class="p-0">
+    <header class="bg-gray-800 text-white p-6 shadow-md">
+        <h1 class="text-2xl font-bold text-center mb-4">CONTROLE DE ABSENTEÍSMO</h1>
+        <nav class="flex justify-center space-x-4">
+            <button id="navRegistrarPresencas" class="nav-button active">
+                <i data-lucide="clipboard-list"></i>Registrar Presenças
+            </button>
+            <button id="navHorariosPausa" class="nav-button">
+                <i data-lucide="clock"></i>Horários de Pausa
+            </button>
+            <button id="navDashboard" class="nav-button">
+                <i data-lucide="layout-dashboard"></i>Dashboard
+            </button>
+        </nav>
+    </header>
+
+    <main class="p-4 md:p-8">
+        <section id="sectionRegistrarPresencas" class="space-y-6">
+            <div class="text-center mb-6">
+                <label for="attendanceDate" class="block text-sm font-medium text-gray-700 mb-1">Data Selecionada</label>
+                <input type="date" id="attendanceDate" class="mx-auto p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 w-full max-w-xs">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-lg space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-semibold text-gray-700">Registrar Presença/Ausência</h2>
+                        <button id="openAddEmployeeModalBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
+                            <i data-lucide="user-plus" class="mr-2 h-5 w-5"></i>Novo Funcionário
+                        </button>
+                    </div>
+                    <div>
+                        <label for="attendanceEmployeeSelect" class="block text-sm font-medium text-gray-700 mb-1">Selecione o Funcionário:</label>
+                        <select id="attendanceEmployeeSelect" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </select>
+                    </div>
+                    <div>
+                        <label for="attendanceStatus" class="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+                        <select id="attendanceStatus" class="w-full p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="presente">Presente</option>
+                            <option value="ausente">Ausente</option>
+                        </select>
+                    </div>
+                    <button id="registerAttendanceBtn" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition duration-150 ease-in-out">
+                        Registrar
+                    </button>
+                </div>
+
+                <div class="md:col-span-1 space-y-4">
+                    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow">
+                        <h3 class="font-bold mb-1">Instruções</h3>
+                        <p class="text-sm">Use o formulário ao lado para registrar a presença ou ausência de um funcionário. Selecione o funcionário, indique se está presente ou ausente, e clique em "Registrar".</p>
+                    </div>
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow">
+                        <h3 class="font-bold mb-1">Como funciona</h3>
+                         <p class="text-sm">Operadores: "Horário de Pausa Base" é referência para Janeiro e rotaciona mensalmente. A alocação na tabela de pausa para operadores inicia às 16h. Demais tipos (Supervisor, Líder, Treinador): o horário de pausa é fixo.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Resumo de Presenças do Dia</h2>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <div class="flex gap-1">
+                            <button id="viewModeList" class="control-button" title="Visualizar como Lista">
+                                <i data-lucide="list"></i>
+                            </button>
+                            <button id="viewModeGallery" class="control-button active" title="Visualizar como Galeria">
+                                <i data-lucide="layout-grid"></i>
+                            </button>
+                        </div>
+                        <div class="flex gap-1">
+                            <button id="sortAZ" class="control-button active" title="Ordenar A-Z">
+                                <i data-lucide="sort-asc"></i> A-Z
+                            </button>
+                            <button id="sortZA" class="control-button" title="Ordenar Z-A">
+                                <i data-lucide="sort-desc"></i> Z-A
+                            </button>
+                        </div>
+                        <button id="openAddEmployeeModalBtnSecondary" class="text-blue-500 hover:text-blue-700 font-semibold py-1.5 px-3 rounded-lg inline-flex items-center text-sm border border-blue-500 hover:bg-blue-50">
+                            <i data-lucide="plus-circle" class="mr-1.5 h-4 w-4"></i>Adicionar Funcionário
+                        </button>
+                    </div>
+                </div>
+                <div id="employeeSummaryContainer">
+                </div>
+            </div>
+        </section>
+
+        <section id="sectionHorariosPausa" class="section-hidden printable-content">
+             <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex flex-wrap gap-2 mb-4 no-print items-center">
+                     <h2 class="text-xl font-semibold text-gray-700 mr-auto">Horários de Pausa (<span id="scheduleDateDisplayPausa"></span>)</h2>
+                    <button id="exportPdfBtn" class="bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
+                        <i data-lucide="file-down" class="mr-2 h-5 w-5"></i>Exportar PDF
+                    </button>
+                    <button id="exportPngBtn" class="bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
+                        <i data-lucide="image" class="mr-2 h-5 w-5"></i>Exportar PNG
+                    </button>
+                    <button id="printScheduleBtn" class="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center transition duration-150 ease-in-out">
+                        <i data-lucide="printer" class="mr-2 h-5 w-5"></i>Imprimir
+                    </button>
+                </div>
+                <div id="printableArea" class="overflow-x-auto bg-white p-0 md:p-4 rounded">
+                    <div id="printableAreaHeader" class="text-center mb-4 print-only"> 
+                        <h2 class="text-2xl font-bold text-gray-800">Horários de Janta</h2>
+                        <h3 class="text-lg font-semibold text-gray-600">Horário de Pausas e Operadores - <span id="scheduleDateDisplayForTitle"></span></h3>
+                    </div>
+                    <table id="breakScheduleTable" class="min-w-full bg-white rounded-lg shadow mb-4">
+                        <thead></thead>
+                        <tbody id="breakScheduleTableBody" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                    <div id="printableAreaFooter" class="text-center text-xs text-gray-600 pt-4 mt-4 border-t border-gray-200">
+                        ScWeb - 2025 @ Rafael Scarpato
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sectionDashboard" class="section-hidden">
+            <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard</h2>
+                <i data-lucide="construction" class="h-16 w-16 text-gray-400 mx-auto mb-2"></i>
+                <p class="text-gray-500">Esta seção está em desenvolvimento.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer id="mainFooter" class="text-center py-6 mt-8 text-sm text-gray-500 border-t border-gray-300">
+        ScWeb - 2025 @ Rafael Scarpato
+    </footer>
+
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeEmployeeModalBtn">&times;</span>
+            <h3 id="employeeModalTitle" class="text-xl font-semibold mb-4">Adicionar Funcionário</h3>
+            <form id="employeeForm">
+                <input type="hidden" id="employeeId">
+                <div class="mb-4">
+                    <label for="employeeName" class="block text-sm font-medium text-gray-700">Nome:</label>
+                    <input type="text" id="employeeName" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label for="employeeType" class="block text-sm font-medium text-gray-700">Tipo:</label>
+                    <select id="employeeType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="operador">Operador</option>
+                        <option value="trocador">Trocador (Supervisor de Linha)</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="lider">Líder</option>
+                        <option value="treinador">Treinador</option>
+                    </select>
+                </div>
+                <div id="operadorFieldsContainer"> <div id="horarioPausaField" class="mb-4" style="display: none;">
+                        <label for="employeeBreakTimeBase" class="block text-sm font-medium text-gray-700">Horário de Pausa:</label>
+                        <p id="horarioPausaHelpText" class="text-xs text-gray-500 mb-1"></p>
+                        <select id="employeeBreakTimeBase" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                            <option value="15:00:00">15:00</option>
+                            <option value="16:00:00">16:00</option>
+                            <option value="17:00:00">17:00</option>
+                            <option value="18:00:00">18:00</option>
+                            <option value="19:00:00">19:00</option>
+                            </select>
+                    </div>
+                    <div id="trocadorResponsavelField" class="mb-4" style="display: none;">
+                        <label for="employeeTrocador" class="block text-sm font-medium text-gray-700">Trocador Responsável:</label>
+                        <select id="employeeTrocador" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Mensagem</div>
+
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://dvanjyclijkibikfvagl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YW5qeWNsaWpraWJpa2Z2YWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNjYwNTAsImV4cCI6MjA2Mjc0MjA1MH0.Dv26rQqtPZrgBCfUknPiXFbVAKZjIWYulIa4srlasZk';
+        const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Elementos do DOM Globais
+        const attendanceDateInput = document.getElementById('attendanceDate');
+        const toastElement = document.getElementById('toast');
+        
+        // Elementos do Modal de Funcionário
+        const employeeModal = document.getElementById('employeeModal');
+        const openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModalBtn');
+        const openAddEmployeeModalBtnSecondary = document.getElementById('openAddEmployeeModalBtnSecondary');
+        const closeEmployeeModalBtn = document.getElementById('closeEmployeeModalBtn');
+        const employeeForm = document.getElementById('employeeForm');
+        const employeeModalTitle = document.getElementById('employeeModalTitle');
+        const employeeIdInput = document.getElementById('employeeId');
+        const employeeNameInput = document.getElementById('employeeName');
+        const employeeTypeSelect = document.getElementById('employeeType');
+        // Campos dentro do modal
+        const horarioPausaField = document.getElementById('horarioPausaField');
+        const horarioPausaHelpText = document.getElementById('horarioPausaHelpText');
+        const employeeBreakTimeBaseSelect = document.getElementById('employeeBreakTimeBase');
+        const trocadorResponsavelField = document.getElementById('trocadorResponsavelField');
+        const employeeTrocadorSelect = document.getElementById('employeeTrocador');
+        
+        // Elementos da Seção Registrar Presenças
+        const attendanceEmployeeSelect = document.getElementById('attendanceEmployeeSelect');
+        const attendanceStatusSelect = document.getElementById('attendanceStatus');
+        const registerAttendanceBtn = document.getElementById('registerAttendanceBtn');
+        const employeeSummaryContainer = document.getElementById('employeeSummaryContainer');
+        const viewModeListBtn = document.getElementById('viewModeList');
+        const viewModeGalleryBtn = document.getElementById('viewModeGallery');
+        const sortAZBtn = document.getElementById('sortAZ');
+        const sortZABtn = document.getElementById('sortZA');
+
+        // Elementos da Seção Horários de Pausa
+        const scheduleDateDisplayPausa = document.getElementById('scheduleDateDisplayPausa');
+        const scheduleDateDisplayForTitle = document.getElementById('scheduleDateDisplayForTitle');
+        const printableAreaHeader = document.getElementById('printableAreaHeader'); 
+        const breakScheduleTable = document.getElementById('breakScheduleTable');
+        const breakScheduleTableBody = document.getElementById('breakScheduleTableBody');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        const exportPngBtn = document.getElementById('exportPngBtn');
+        const printScheduleBtn = document.getElementById('printScheduleBtn');
+        const printableAreaFooter = document.getElementById('printableAreaFooter');
+
+
+        // Botões de Navegação e Seções
+        const navButtons = {
+            registrarPresencas: document.getElementById('navRegistrarPresencas'),
+            horariosPausa: document.getElementById('navHorariosPausa'),
+            dashboard: document.getElementById('navDashboard'),
+        };
+        const sections = {
+            registrarPresencas: document.getElementById('sectionRegistrarPresencas'),
+            horariosPausa: document.getElementById('sectionHorariosPausa'),
+            dashboard: document.getElementById('sectionDashboard'),
+        };
+
+        let allEmployees = [];
+        let allTrocadores = [];
+        let attendanceRecordsToday = [];
+        let currentEmployeeView = 'gallery'; 
+        let currentEmployeeSort = 'az'; 
+
+
+        // --- Funções Utilitárias ---
+        function showToast(message, type = 'success') {
+            toastElement.textContent = message;
+            toastElement.className = 'toast show'; 
+            toastElement.classList.remove('bg-red-500', 'bg-green-500');
+            if (type === 'error') {
+                toastElement.classList.add('bg-red-500');
+            } else {
+                toastElement.classList.add('bg-green-500');
+            }
+            setTimeout(() => {
+                toastElement.className = 'toast';
+            }, 3000);
+        }
+
+        function formatDate(dateString) { 
+            if (!dateString) return 'N/A';
+            const parts = dateString.split('-');
+            if (parts.length !== 3) return dateString; 
+            const [year, month, day] = parts;
+            return `${day}/${month}/${year}`;
+        }
+
+        // --- Navegação entre Seções ---
+        function showSection(sectionKey) {
+            Object.keys(sections).forEach(key => {
+                sections[key].classList.add('section-hidden');
+                navButtons[key].classList.remove('active');
+            });
+            sections[sectionKey].classList.remove('section-hidden');
+            navButtons[sectionKey].classList.add('active');
+            if (sectionKey === 'horariosPausa' || sectionKey === 'registrarPresencas') {
+                 const currentDate = attendanceDateInput.value;
+                 if(currentDate) fetchAttendanceForDate(currentDate);
+            }
+        }
+        
+        // --- Lógica de Visualização e Ordenação de Funcionários ---
+        function updateEmployeeDisplayControls() {
+            viewModeListBtn.classList.toggle('active', currentEmployeeView === 'list');
+            viewModeGalleryBtn.classList.toggle('active', currentEmployeeView === 'gallery');
+            sortAZBtn.classList.toggle('active', currentEmployeeSort === 'az');
+            sortZABtn.classList.toggle('active', currentEmployeeSort === 'za');
+        }
+
+        function sortEmployees(employees, sortOrder) {
+            const sortedEmployees = [...employees];
+            sortedEmployees.sort((a, b) => {
+                if (sortOrder === 'az') {
+                    return a.nome.localeCompare(b.nome);
+                } else { // za
+                    return b.nome.localeCompare(a.nome);
+                }
+            });
+            return sortedEmployees;
+        }
+        
+        function renderEmployeeSummary() {
+            employeeSummaryContainer.innerHTML = '';
+            const sortedEmployees = sortEmployees(allEmployees, currentEmployeeSort);
+
+            if (sortedEmployees.length === 0) {
+                employeeSummaryContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">Nenhum funcionário cadastrado.</p>';
+                return;
+            }
+
+            if (currentEmployeeView === 'gallery') {
+                const galleryContainer = document.createElement('div');
+                galleryContainer.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
+                sortedEmployees.forEach(emp => {
+                    const record = attendanceRecordsToday.find(r => r.funcionario && r.funcionario.id === emp.id);
+                    let statusText = 'Não registrado';
+                    let statusColor = 'text-gray-500';
+                    if (record) {
+                        statusText = record.status === 'presente' ? 'Presente' : 'Ausente';
+                        statusColor = record.status === 'presente' ? 'text-green-600' : 'text-red-600';
+                    }
+                    const card = document.createElement('div');
+                    card.className = 'bg-gray-50 p-4 rounded-lg shadow border border-gray-200 flex flex-col justify-between';
+                    card.innerHTML = `
+                        <div>
+                            <h4 class="font-semibold text-gray-800">${emp.nome} <span class="text-xs text-gray-500">(${emp.tipo.charAt(0).toUpperCase() + emp.tipo.slice(1)})</span></h4>
+                            <p class="text-sm ${statusColor} font-medium">${statusText}</p>
+                        </div>
+                        <div class="mt-3 flex space-x-2 justify-end">
+                            <button class="edit-employee-btn text-blue-500 hover:text-blue-700 p-1" data-id="${emp.id}" title="Editar ${emp.nome}">
+                                <i data-lucide="edit-2" class="h-4 w-4"></i>
+                            </button>
+                            <button class="delete-employee-btn text-red-500 hover:text-red-700 p-1" data-id="${emp.id}" title="Excluir ${emp.nome}">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    galleryContainer.appendChild(card);
+                });
+                employeeSummaryContainer.appendChild(galleryContainer);
+            } else { // list view
+                const listContainer = document.createElement('ul');
+                listContainer.className = 'space-y-3';
+                sortedEmployees.forEach(emp => {
+                    const record = attendanceRecordsToday.find(r => r.funcionario && r.funcionario.id === emp.id);
+                    let statusText = 'Não registrado';
+                    let statusColor = 'text-gray-500';
+                    if (record) {
+                        statusText = record.status === 'presente' ? 'Presente' : 'Ausente';
+                        statusColor = record.status === 'presente' ? 'text-green-600' : 'text-red-600';
+                    }
+                    const listItem = document.createElement('li');
+                    listItem.className = 'bg-gray-50 p-3 rounded-md shadow-sm border border-gray-200 flex justify-between items-center';
+                    listItem.innerHTML = `
+                        <div class="flex-grow">
+                            <span class="font-medium text-gray-800">${emp.nome}</span>
+                            <span class="text-xs text-gray-500 ml-1">(${emp.tipo.charAt(0).toUpperCase() + emp.tipo.slice(1)})</span>
+                            <span class="text-sm ${statusColor} ml-3 font-medium">${statusText}</span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="edit-employee-btn text-blue-500 hover:text-blue-700 p-1" data-id="${emp.id}" title="Editar ${emp.nome}">
+                                <i data-lucide="edit-2" class="h-4 w-4"></i>
+                            </button>
+                            <button class="delete-employee-btn text-red-500 hover:text-red-700 p-1" data-id="${emp.id}" title="Excluir ${emp.nome}">
+                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    listContainer.appendChild(listItem);
+                });
+                employeeSummaryContainer.appendChild(listContainer);
+            }
+            lucide.createIcons();
+            addEventListenersToEmployeeActions();
+        }
+
+        function addEventListenersToEmployeeActions() {
+            document.querySelectorAll('.edit-employee-btn').forEach(btn => {
+                btn.addEventListener('click', handleEditEmployee);
+            });
+            document.querySelectorAll('.delete-employee-btn').forEach(btn => {
+                btn.addEventListener('click', handleDeleteEmployee);
+            });
+        }
+        
+        viewModeListBtn.addEventListener('click', () => {
+            currentEmployeeView = 'list';
+            updateEmployeeDisplayControls();
+            renderEmployeeSummary();
+        });
+
+        viewModeGalleryBtn.addEventListener('click', () => {
+            currentEmployeeView = 'gallery';
+            updateEmployeeDisplayControls();
+            renderEmployeeSummary();
+        });
+
+        sortAZBtn.addEventListener('click', () => {
+            currentEmployeeSort = 'az';
+            updateEmployeeDisplayControls();
+            renderEmployeeSummary();
+        });
+
+        sortZABtn.addEventListener('click', () => {
+            currentEmployeeSort = 'za';
+            updateEmployeeDisplayControls();
+            renderEmployeeSummary();
+        });
+
+        // --- Funções de Gerenciamento de Funcionários (Modal e CRUD) ---
+        async function fetchEmployees() {
+            const { data, error } = await sbClient 
+                .from('funcionarios')
+                .select(`
+                    id,
+                    nome,
+                    tipo,
+                    horario_pausa_base,
+                    trocador_responsavel_id,
+                    trocador_responsavel:funcionarios!trocador_responsavel_id ( nome )
+                `);
+
+            if (error) {
+                console.error('Erro ao buscar funcionários:', error);
+                showToast('Erro ao buscar funcionários.', 'error');
+                allEmployees = []; 
+                allTrocadores = [];
+                return [];
+            }
+            allEmployees = data || []; 
+            allTrocadores = allEmployees.filter(emp => emp.tipo === 'trocador');
+            return allEmployees;
+        }
+        
+        function populateTrocadorSelect(selectElement, selectedTrocadorId = null) {
+            selectElement.innerHTML = '<option value="">Nenhum</option>'; 
+            allTrocadores.forEach(trocador => {
+                const option = document.createElement('option');
+                option.value = trocador.id;
+                option.textContent = trocador.nome;
+                if (selectedTrocadorId && trocador.id === selectedTrocadorId) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+        
+        function openEmployeeModalForAdd() {
+            employeeModalTitle.textContent = 'Adicionar Funcionário';
+            employeeForm.reset();
+            employeeIdInput.value = '';
+            employeeTypeSelect.value = 'operador'; 
+            handleEmployeeTypeChange(); 
+            populateTrocadorSelect(employeeTrocadorSelect);
+            employeeModal.style.display = 'flex';
+        }
+        openAddEmployeeModalBtn.addEventListener('click', openEmployeeModalForAdd);
+        openAddEmployeeModalBtnSecondary.addEventListener('click', openEmployeeModalForAdd);
+
+        closeEmployeeModalBtn.addEventListener('click', () => {
+            employeeModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target === employeeModal) {
+                employeeModal.style.display = 'none';
+            }
+        });
+        
+        function handleEmployeeTypeChange() {
+            const selectedType = employeeTypeSelect.value;
+            if (selectedType === 'operador') {
+                horarioPausaField.style.display = 'block';
+                horarioPausaHelpText.textContent = 'Este horário (Ref. Janeiro) rotaciona mensalmente.';
+                trocadorResponsavelField.style.display = 'block';
+            } else if (['supervisor', 'lider', 'treinador'].includes(selectedType)) {
+                horarioPausaField.style.display = 'block';
+                horarioPausaHelpText.textContent = 'Horário de pausa fixo para este funcionário.';
+                trocadorResponsavelField.style.display = 'none';
+                employeeTrocadorSelect.value = ''; 
+            } else { 
+                horarioPausaField.style.display = 'none';
+                trocadorResponsavelField.style.display = 'none';
+                employeeBreakTimeBaseSelect.value = ''; 
+                employeeTrocadorSelect.value = ''; 
+            }
+        }
+        employeeTypeSelect.addEventListener('change', handleEmployeeTypeChange);
+
+
+        employeeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = employeeIdInput.value;
+            const nome = employeeNameInput.value;
+            const tipo = employeeTypeSelect.value;
+            
+            let horario_pausa_base = null;
+            if (['operador', 'supervisor', 'lider', 'treinador'].includes(tipo) && employeeBreakTimeBaseSelect.value) {
+                horario_pausa_base = employeeBreakTimeBaseSelect.value;
+            }
+
+            let trocador_responsavel_id = null;
+            if (tipo === 'operador' && employeeTrocadorSelect.value) {
+                trocador_responsavel_id = employeeTrocadorSelect.value;
+            }
+
+            const employeeData = { nome, tipo, horario_pausa_base, trocador_responsavel_id };
+
+            let result;
+            if (id) { 
+                result = await sbClient.from('funcionarios').update(employeeData).eq('id', id).select(); 
+            } else { 
+                result = await sbClient.from('funcionarios').insert(employeeData).select(); 
+            }
+
+            if (result.error) {
+                console.error('Erro ao salvar funcionário:', result.error);
+                showToast(`Erro ao salvar: ${result.error.message}`, 'error');
+            } else {
+                showToast(`Funcionário ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
+                employeeModal.style.display = 'none';
+                await refreshAllData(); 
+            }
+        });
+
+        async function handleEditEmployee(event) {
+            const id = event.currentTarget.dataset.id; 
+            const employee = allEmployees.find(emp => emp.id === id);
+            if (!employee) return;
+
+            employeeModalTitle.textContent = 'Editar Funcionário';
+            employeeIdInput.value = employee.id;
+            employeeNameInput.value = employee.nome;
+            employeeTypeSelect.value = employee.tipo;
+            
+            handleEmployeeTypeChange(); 
+            
+            if (['operador', 'supervisor', 'lider', 'treinador'].includes(employee.tipo)) {
+                 employeeBreakTimeBaseSelect.value = employee.horario_pausa_base || '';
+            }
+            if (employee.tipo === 'operador') {
+                populateTrocadorSelect(employeeTrocadorSelect, employee.trocador_responsavel_id);
+            }
+            
+            employeeModal.style.display = 'flex';
+        }
+        
+        async function handleDeleteEmployee(event) {
+            const id = event.currentTarget.dataset.id; 
+            const employee = allEmployees.find(emp => emp.id === id);
+            if (!employee) return;
+
+            if (confirm(`Tem certeza que deseja excluir ${employee.nome}? Esta ação não pode ser desfeita.`)) {
+                const { data: referencingOperators, error: fetchError } = await sbClient 
+                    .from('funcionarios')
+                    .select('id')
+                    .eq('trocador_responsavel_id', id);
+
+                if (fetchError) {
+                    console.error('Erro ao verificar referências:', fetchError);
+                    showToast('Erro ao verificar referências antes de excluir.', 'error');
+                    return;
+                }
+
+                if (referencingOperators && referencingOperators.length > 0) {
+                    showToast(`${employee.nome} é trocador responsável por outros operadores. Reatribua-os antes de excluir.`, 'error');
+                    return;
+                }
+                
+                const { error } = await sbClient.from('funcionarios').delete().eq('id', id); 
+                if (error) {
+                    console.error('Erro ao excluir funcionário:', error);
+                    showToast(`Erro ao excluir: ${error.message}`, 'error');
+                } else {
+                    showToast('Funcionário excluído com sucesso!');
+                    await refreshAllData(); 
+                }
+            }
+        }
+
+        // --- Funções de Registro de Presença ---
+        function populateAttendanceEmployeeSelect(employees) {
+            attendanceEmployeeSelect.innerHTML = '<option value="">Selecione um funcionário</option>';
+            const sortedForSelect = sortEmployees(employees, 'az');
+            sortedForSelect.forEach(emp => {
+                const option = document.createElement('option');
+                option.value = emp.id;
+                option.textContent = `${emp.nome} (${emp.tipo.charAt(0).toUpperCase() + emp.tipo.slice(1)})`;
+                attendanceEmployeeSelect.appendChild(option);
+            });
+        }
+
+        async function registerAttendance() { 
+            const funcionario_id = attendanceEmployeeSelect.value;
+            const data = attendanceDateInput.value;
+            const status = attendanceStatusSelect.value; 
+
+            if (!funcionario_id || !data) {
+                showToast('Por favor, selecione funcionário e data.', 'error');
+                return;
+            }
+
+            const { data: existing, error: fetchError } = await sbClient 
+                .from('registros_presenca')
+                .select('id')
+                .eq('funcionario_id', funcionario_id)
+                .eq('data', data)
+                .maybeSingle();
+
+            if (fetchError) {
+                console.error('Erro ao verificar registro existente:', fetchError);
+                showToast('Erro ao registrar presença.', 'error');
+                return;
+            }
+            
+            let result;
+            if (existing) { 
+                 result = await sbClient 
+                    .from('registros_presenca')
+                    .update({ status })
+                    .eq('id', existing.id)
+                    .select();
+            } else { 
+                 result = await sbClient 
+                    .from('registros_presenca')
+                    .insert({ funcionario_id, data, status })
+                    .select();
+            }
+
+            if (result.error) {
+                console.error('Erro ao registrar presença:', result.error);
+                showToast(`Erro ao registrar presença: ${result.error.message}`, 'error');
+            } else {
+                showToast(`Presença (${status}) registrada com sucesso!`);
+                await fetchAttendanceForDate(data); 
+            }
+        }
+        registerAttendanceBtn.addEventListener('click', registerAttendance);
+        
+        function updateDateDisplays(dateStr) {
+            const formattedDt = formatDate(dateStr);
+            if (scheduleDateDisplayPausa) scheduleDateDisplayPausa.textContent = formattedDt; 
+            if (scheduleDateDisplayForTitle) scheduleDateDisplayForTitle.textContent = formattedDt;
+        }
+
+        attendanceDateInput.addEventListener('change', (e) => {
+            const newDate = e.target.value;
+            if (newDate) {
+                updateDateDisplays(newDate);
+                fetchAttendanceForDate(newDate);
+            }
+        });
+
+        // --- Funções de Horário de Pausa ---
+        async function fetchAttendanceForDate(date) {
+            if (!date) { 
+                console.warn("fetchAttendanceForDate chamado com data inválida");
+                attendanceRecordsToday = []; 
+                renderEmployeeSummary();
+                generateAndRenderBreakSchedule(null); 
+                return;
+            }
+            const { data: attendanceData, error } = await sbClient 
+                .from('registros_presenca')
+                .select(`
+                    status,
+                    funcionario_id,
+                    funcionario:funcionarios (id, nome, tipo, horario_pausa_base, trocador_responsavel_id)
+                `)
+                .eq('data', date);
+            
+            if (error) {
+                console.error('Erro ao buscar registros de presença:', error);
+                showToast('Erro ao buscar presenças.', 'error');
+                attendanceRecordsToday = [];
+            } else {
+                attendanceRecordsToday = (attendanceData || []).map(record => ({
+                    ...record,
+                    funcionario: allEmployees.find(emp => emp.id === record.funcionario_id) || record.funcionario
+                }));
+            }
+            renderEmployeeSummary(); 
+            generateAndRenderBreakSchedule(date); 
+        }
+        
+        function getRotatedBreakHour(baseHourStr, currentDate) {
+            if (!baseHourStr) return null; 
+            const baseHour = parseInt(baseHourStr.split(':')[0]); 
+            const currentMonth = currentDate.getUTCMonth(); 
+            const shift = currentMonth; 
+            const newHourOffset = (baseHour - 15 + shift) % 5; 
+            return 15 + newHourOffset; 
+        }
+
+        function generateAndRenderBreakSchedule(dateStr) {
+            const tableHeader = breakScheduleTable.querySelector('thead');
+            if (tableHeader) {
+                tableHeader.innerHTML = `
+                    <tr class="bg-gray-200">
+                        <th class="py-3 px-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Funcionário</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">15h</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">16h</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">17h</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">18h</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">19h</th>
+                        <th class="py-3 px-4 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">20h</th>
+                    </tr>
+                `;
+            }
+            breakScheduleTableBody.innerHTML = ''; 
+
+            if (!dateStr) { 
+                breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Por favor, selecione uma data.</td></tr>';
+                return;
+            }
+            
+            const currentDate = new Date(dateStr + 'T00:00:00Z'); 
+
+            const presentEmployees = attendanceRecordsToday
+                .filter(r => r.status === 'presente' && r.funcionario) 
+                .map(r => r.funcionario);
+
+            const systemTrocadores = allEmployees.filter(emp => emp.tipo === 'trocador')
+                .sort((a, b) => a.nome.localeCompare(b.nome)); 
+            
+            const otherLeadersPresent = presentEmployees.filter(emp => 
+                ['supervisor', 'lider', 'treinador'].includes(emp.tipo) && emp.horario_pausa_base
+            ).sort((a,b) => a.nome.localeCompare(b.nome));
+
+            if (systemTrocadores.length === 0 && otherLeadersPresent.length === 0) {
+                breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Nenhum trocador ou liderança cadastrada para exibir.</td></tr>';
+                return;
+            }
+            
+            let hasAnyEntry = false;
+
+            // Renderiza Trocadores e seus Operadores
+            systemTrocadores.forEach(trocador => {
+                hasAnyEntry = true;
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-200 last:border-b-0";
+                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-800 font-semibold">${trocador.nome}</td>`;
+
+                const presentOperatorsForThisTrocador = presentEmployees
+                    .filter(emp => emp.tipo === 'operador' && emp.trocador_responsavel_id === trocador.id && emp.horario_pausa_base)
+                    .map(op => ({
+                        ...op,
+                        rotatedBreakHour: getRotatedBreakHour(op.horario_pausa_base, currentDate) 
+                    }))
+                    .sort((a, b) => {
+                        const hourA = a.rotatedBreakHour === null ? 99 : a.rotatedBreakHour;
+                        const hourB = b.rotatedBreakHour === null ? 99 : b.rotatedBreakHour;
+                        if (hourA === hourB) return a.nome.localeCompare(b.nome);
+                        return hourA - hourB;
+                    });
+
+                // Para operadores, o slot 15h é sempre "-"
+                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`;
+                
+                const operatorBreakSlotsColumns = [16, 17, 18, 19]; // Alocação começa às 16h
+                let operatorToPlaceIndex = 0; 
+
+                operatorBreakSlotsColumns.forEach(slotColumnHour => {
+                    if (operatorToPlaceIndex < presentOperatorsForThisTrocador.length) {
+                        const operator = presentOperatorsForThisTrocador[operatorToPlaceIndex];
+                        tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-700 text-center">${operator.nome}</td>`;
+                        operatorToPlaceIndex++;
+                    } else {
+                        tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`; 
+                    }
+                });
+
+                const isTrocadorPresent = presentEmployees.some(pEmp => pEmp.id === trocador.id);
+                if (isTrocadorPresent) {
+                    tr.innerHTML += `<td class="py-3 px-4 text-sm text-center font-semibold bg-blue-100 text-blue-700">${trocador.nome.toUpperCase()}</td>`;
+                } else {
+                    tr.innerHTML += `<td class="py-3 px-4 text-sm text-center font-semibold bg-red-100 text-red-600">AUSENTE</td>`;
+                }
+                breakScheduleTableBody.appendChild(tr);
+            });
+
+            // Renderiza Outras Lideranças (Supervisor, Líder, Treinador)
+            otherLeadersPresent.forEach(leader => {
+                hasAnyEntry = true;
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-gray-200 last:border-b-0 bg-gray-50"; 
+                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-800 font-semibold">${leader.nome}</td>`; 
+                
+                const leaderBreakHour = parseInt(leader.horario_pausa_base.split(':')[0]);
+                const breakSlots = [15, 16, 17, 18, 19, 20]; 
+
+                breakSlots.forEach(slotHour => {
+                    if (slotHour === leaderBreakHour) {
+                        tr.innerHTML += `<td class="py-3 px-4 text-sm text-center font-semibold text-purple-700 bg-purple-100">${leader.nome.toUpperCase()}</td>`;
+                    } else {
+                        tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`;
+                    }
+                });
+                breakScheduleTableBody.appendChild(tr);
+            });
+
+
+            if (!hasAnyEntry) { 
+                 breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Nenhum funcionário (trocador ou liderança) para exibir na escala de pausa.</td></tr>';
+            }
+        }
+
+
+        // --- Funções de Exportação ---
+        exportPdfBtn.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'landscape' });
+            const dateForTitle = formatDate(attendanceDateInput.value || new Date().toISOString().slice(0,10));
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const footerText = "ScWeb - 2025 @ Rafael Scarpato";
+            
+            doc.setFontSize(18);
+            doc.text("Horários de Janta", pageWidth / 2, 15, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text(`Horário de Pausas e Operadores - ${dateForTitle}`, pageWidth / 2, 22, { align: 'center' });
+
+            doc.autoTable({
+                html: '#breakScheduleTable', startY: 30, theme: 'grid',
+                headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' }, 
+                styles: { font: 'Inter', cellPadding: 2.5, fontSize: 9, halign: 'center', valign: 'middle' },
+                columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 50 } }, 
+                didParseCell: function (data) {
+                    if (data.column.index > 0 || data.section === 'head') data.cell.styles.halign = 'center';
+                    if (data.column.index === 0 && data.section === 'body' && data.cell.text[0]) {
+                        data.cell.text[0] = data.cell.text[0].split(' (')[0]; 
+                    }
+
+                    const originalText = data.cell.raw?.textContent || ""; 
+                    if (originalText.includes(allEmployees.find(e => e.nome === data.cell.text[0] && e.tipo === 'trocador')?.nome)) { 
+                        if (data.column.index === 6) { 
+                             if (data.cell.text[0] && data.cell.text[0].includes("AUSENTE")) { 
+                                data.cell.styles.fillColor = '#fee2e2'; data.cell.styles.textColor = '#ef4444';
+                            } else if (data.cell.text[0] && data.cell.text[0] !== '-') {
+                                data.cell.styles.fillColor = '#dbeafe'; data.cell.styles.textColor = '#1e40af';
+                            }
+                        }
+                    }
+                    else if (allEmployees.find(e => e.nome === data.cell.text[0] && ['supervisor', 'lider', 'treinador'].includes(e.tipo))) {
+                        if (data.cell.text[0] && data.cell.text[0] !== '-' && data.column.index > 0 && data.column.index < 6) { 
+                            data.cell.styles.fillColor = '#f3e8ff'; data.cell.styles.textColor = '#7e22ce'; 
+                        }
+                    }
+                },
+                didDrawPage: function (data) {
+                    doc.setFontSize(8);
+                    doc.setTextColor(100);
+                    const textWidth = doc.getStringUnitWidth(footerText) * doc.internal.getFontSize() / doc.internal.scaleFactor;
+                    const textX = (pageWidth - textWidth) / 2;
+                    doc.text(footerText, textX, pageHeight - 10);
+                }
+            });
+            doc.save(`horarios_pausa_${(attendanceDateInput.value || 'hoje').replace(/-/g, '_')}.pdf`);
+            showToast('PDF gerado com sucesso!');
+        });
+
+        exportPngBtn.addEventListener('click', () => {
+            const printableArea = document.getElementById('printableArea');
+            const titleHeader = document.getElementById('printableAreaHeader'); 
+
+            if(titleHeader) titleHeader.classList.add('capture-visible');
+            printableAreaFooter.style.display = 'block'; 
+
+            html2canvas(printableArea, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(canvas => {
+                if(titleHeader) titleHeader.classList.remove('capture-visible');
+                printableAreaFooter.style.display = 'none';
+
+                const link = document.createElement('a');
+                link.download = `horarios_pausa_${(attendanceDateInput.value || 'hoje').replace(/-/g, '_')}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast('PNG gerado com sucesso!');
+            }).catch(err => {
+                console.error("Erro ao gerar PNG:", err);
+                showToast('Erro ao gerar PNG.', 'error');
+                if(titleHeader) titleHeader.classList.remove('capture-visible');
+                printableAreaFooter.style.display = 'none'; 
+            });
+        });
+        
+        printScheduleBtn.addEventListener('click', () => { 
+            const titleHeader = document.getElementById('printableAreaHeader');
+            if(titleHeader) titleHeader.classList.add('capture-visible'); 
+            printableAreaFooter.style.display = 'block';
+            window.print(); 
+            setTimeout(() => {
+                 if(titleHeader) titleHeader.classList.remove('capture-visible');
+                 printableAreaFooter.style.display = 'none'; 
+            }, 1000); 
+        });
+
+        // --- Inicialização ---
+        async function refreshAllData() {
+            await fetchEmployees();
+            populateAttendanceEmployeeSelect(allEmployees);
+            populateTrocadorSelect(employeeTrocadorSelect);
+            
+            const currentDate = attendanceDateInput.value;
+            if (currentDate) {
+                await fetchAttendanceForDate(currentDate);
+            } else {
+                renderEmployeeSummary(); 
+                generateAndRenderBreakSchedule(null); 
+            }
+            updateEmployeeDisplayControls();
+        }
+
+        async function initializeApp() {
+            const defaultDate = "2025-05-14"; 
+            attendanceDateInput.value = defaultDate; 
+            updateDateDisplays(defaultDate);
+            
+            navButtons.registrarPresencas.addEventListener('click', () => showSection('registrarPresencas'));
+            navButtons.horariosPausa.addEventListener('click', () => showSection('horariosPausa'));
+            navButtons.dashboard.addEventListener('click', () => showSection('dashboard'));
+
+            await refreshAllData(); 
+            showSection('registrarPresencas'); 
+            lucide.createIcons(); 
+            handleEmployeeTypeChange(); 
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+</body>
+</html>
