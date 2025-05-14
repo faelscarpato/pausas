@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -24,7 +25,7 @@
         }
         .modal-content {
             background-color: #ffffff; margin: auto; padding: 20px;
-            border: 1px solid #888; width: 90%; max-width: 500px; 
+            border: 1px solid #888; width: 90%; max-width: 500px;
             border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .close-button {
@@ -44,15 +45,15 @@
         .toast.show { opacity: 1; }
 
         .nav-button {
-            display: inline-flex; align-items: center; padding: 0.5rem 0.75rem; 
+            display: inline-flex; align-items: center; padding: 0.5rem 0.75rem;
             border-radius: 0.375rem; color: #4b5563; font-weight: 500;
             transition: background-color 0.2s, color 0.2s;
-            font-size: 0.875rem; 
+            font-size: 0.875rem;
         }
         @media (min-width: 640px) { /* sm */
             .nav-button {
                 padding: 0.5rem 1rem;
-                font-size: 1rem; 
+                font-size: 1rem;
             }
         }
         .nav-button:hover { background-color: #d1d5db; }
@@ -65,30 +66,30 @@
 
 
         .control-button {
-            padding: 0.375rem 0.75rem; 
-            border: 1px solid #d1d5db; 
-            border-radius: 0.375rem; 
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
             background-color: white;
-            color: #4b5563; 
-            font-size: 0.875rem; 
+            color: #4b5563;
+            font-size: 0.875rem;
             transition: background-color 0.2s, color 0.2s, border-color 0.2s;
             display: inline-flex;
             align-items: center;
         }
         .control-button:hover {
-            background-color: #f3f4f6; 
+            background-color: #f3f4f6;
         }
         .control-button.active {
-            background-color: #3b82f6; 
+            background-color: #3b82f6;
             color: white;
-            border-color: #3b82f6; 
+            border-color: #3b82f6;
         }
         .control-button i {
-            margin-right: 0.375rem; 
+            margin-right: 0.375rem;
         }
 
-        .print-only { display: none; } 
-        .capture-visible { display: block !important; } 
+        .print-only { display: none; }
+        .capture-visible { display: block !important; }
 
         @media print {
             body { background-color: #fff !important; }
@@ -97,13 +98,39 @@
             .printable-content { position: absolute; left: 0; top: 0; width: 100%; }
             @page { size: landscape; margin: 1cm; }
             .no-print { display: none !important; }
-            .print-only { display: block !important; } 
+            .print-only { display: block !important; }
             .bg-gray-800 { background-color: #1f2937 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .text-white { color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             #printableAreaFooter { display: block !important; visibility: visible !important; }
         }
-        #printableAreaFooter { display: none; } 
+        #printableAreaFooter { display: none; }
         .section-hidden { display: none !important; }
+
+        /* Estilos para os cards do Dashboard */
+        .kpi-card {
+            background-color: white;
+            border-radius: 0.5rem; /* 8px */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem; /* 24px */
+            text-align: center;
+        }
+        .kpi-card-title {
+            font-size: 0.875rem; /* 14px */
+            color: #6b7280; /* gray-500 */
+            margin-bottom: 0.5rem; /* 8px */
+        }
+        .kpi-card-value {
+            font-size: 2.25rem; /* 36px */
+            font-weight: 700; /* bold */
+            color: #1f2937; /* gray-800 */
+        }
+        .chart-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            height: 350px; /* Altura fixa para os gráficos */
+        }
     </style>
 </head>
 <body class="p-0 min-h-screen flex flex-col">
@@ -148,30 +175,34 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2YW5qeWNsaWpraWJpa2Z2YWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxNjYwNTAsImV4cCI6MjA2Mjc0MjA1MH0.Dv26rQqtPZrgBCfUknPiXFbVAKZjIWYulIa4srlasZk';
         const sbClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Variáveis globais para elementos do DOM (serão atribuídas em initializeApp)
-        let attendanceDateInput, toastElement, employeeModal, openAddEmployeeModalBtn, 
-            openAddEmployeeModalBtnSecondary, closeEmployeeModalBtn, employeeForm, 
-            employeeModalTitle, employeeIdInput, employeeNameInput, employeeTypeSelect, 
-            horarioPausaField, horarioPausaHelpText, employeeBreakTimeBaseSelect, 
-            trocadorResponsavelField, employeeTrocadorSelect, attendanceEmployeeSelect, 
-            attendanceStatusSelect, registerAttendanceBtn, employeeSummaryContainer, 
-            viewModeListBtn, viewModeGalleryBtn, sortAZBtn, sortZABtn, 
-            scheduleDateDisplayPausa, scheduleDateDisplayForTitle, printableAreaHeader, 
-            breakScheduleTable, breakScheduleTableBody, exportPdfBtn, exportPngBtn, 
+        // Variáveis globais para elementos do DOM
+        let attendanceDateInput, toastElement, employeeModal, openAddEmployeeModalBtn,
+            openAddEmployeeModalBtnSecondary, closeEmployeeModalBtn, employeeForm,
+            employeeModalTitle, employeeIdInput, employeeNameInput, employeeTypeSelect,
+            horarioPausaField, horarioPausaHelpText, employeeBreakTimeBaseSelect,
+            trocadorResponsavelField, employeeTrocadorSelect, attendanceEmployeeSelect,
+            attendanceStatusSelect, registerAttendanceBtn, employeeSummaryContainer,
+            viewModeListBtn, viewModeGalleryBtn, sortAZBtn, sortZABtn,
+            scheduleDateDisplayPausa, scheduleDateDisplayForTitle, printableAreaHeader,
+            breakScheduleTable, breakScheduleTableBody, exportPdfBtn, exportPngBtn,
             printScheduleBtn, printableAreaFooter, navButtons, sections;
+
+        // Variáveis para os gráficos do Dashboard
+        let attendanceChart = null;
+        let employeeTypeChart = null;
 
         let allEmployees = [];
         let allTrocadores = [];
         let attendanceRecordsToday = [];
-        let currentEmployeeView = 'gallery'; 
-        let currentEmployeeSort = 'az'; 
+        let currentEmployeeView = 'gallery';
+        let currentEmployeeSort = 'az';
 
 
         // --- Funções Utilitárias ---
         function showToast(message, type = 'success') {
             if (toastElement) {
                 toastElement.textContent = message;
-                toastElement.className = 'toast show'; 
+                toastElement.className = 'toast show';
                 toastElement.classList.remove('bg-red-500', 'bg-green-500');
                 if (type === 'error') {
                     toastElement.classList.add('bg-red-500');
@@ -184,10 +215,10 @@
             }
         }
 
-        function formatDate(dateString) { 
+        function formatDate(dateString) {
             if (!dateString) return 'N/A';
             const parts = dateString.split('-');
-            if (parts.length !== 3) return dateString; 
+            if (parts.length !== 3) return dateString;
             const [year, month, day] = parts;
             return `${day}/${month}/${year}`;
         }
@@ -200,13 +231,19 @@
             });
             if (sections[sectionKey]) sections[sectionKey].classList.remove('section-hidden');
             if (navButtons[sectionKey]) navButtons[sectionKey].classList.add('active');
-            
-            if (attendanceDateInput && (sectionKey === 'horariosPausa' || sectionKey === 'registrarPresencas')) {
-                 const currentDate = attendanceDateInput.value;
-                 if(currentDate) fetchAttendanceForDate(currentDate);
+
+            const currentDate = attendanceDateInput ? attendanceDateInput.value : null;
+            if (currentDate) {
+                 fetchAttendanceForDate(currentDate).then(() => {
+                    if (sectionKey === 'dashboard') {
+                        renderDashboard();
+                    }
+                 });
+            } else if (sectionKey === 'dashboard') {
+                 renderDashboard(); // Renderiza com dados vazios se não houver data
             }
         }
-        
+
         // --- Lógica de Visualização e Ordenação de Funcionários ---
         function updateEmployeeDisplayControls() {
             if (!viewModeListBtn || !viewModeGalleryBtn || !sortAZBtn || !sortZABtn) return;
@@ -227,7 +264,7 @@
             });
             return sortedEmployees;
         }
-        
+
         function renderEmployeeSummary() {
             if (!employeeSummaryContainer) return;
             employeeSummaryContainer.innerHTML = '';
@@ -312,10 +349,10 @@
                 btn.addEventListener('click', handleDeleteEmployee);
             });
         }
-        
+
         // --- Funções de Gerenciamento de Funcionários (Modal e CRUD) ---
         async function fetchEmployees() {
-            const { data, error } = await sbClient 
+            const { data, error } = await sbClient
                 .from('funcionarios')
                 .select(`
                     id,
@@ -329,18 +366,18 @@
             if (error) {
                 console.error('Erro ao buscar funcionários:', error);
                 showToast('Erro ao buscar funcionários.', 'error');
-                allEmployees = []; 
+                allEmployees = [];
                 allTrocadores = [];
                 return [];
             }
-            allEmployees = data || []; 
+            allEmployees = data || [];
             allTrocadores = allEmployees.filter(emp => emp.tipo === 'trocador');
             return allEmployees;
         }
-        
+
         function populateTrocadorSelect(selectElement, selectedTrocadorId = null) {
             if (!selectElement) return;
-            selectElement.innerHTML = '<option value="">Nenhum</option>'; 
+            selectElement.innerHTML = '<option value="">Nenhum</option>';
             allTrocadores.forEach(trocador => {
                 const option = document.createElement('option');
                 option.value = trocador.id;
@@ -351,18 +388,18 @@
                 selectElement.appendChild(option);
             });
         }
-        
+
         function openEmployeeModalForAdd() {
             if (!employeeModalTitle || !employeeForm || !employeeIdInput || !employeeTypeSelect || !employeeTrocadorSelect) return;
             employeeModalTitle.textContent = 'Adicionar Funcionário';
             employeeForm.reset();
             employeeIdInput.value = '';
-            employeeTypeSelect.value = 'operador'; 
-            handleEmployeeTypeChange(); 
+            employeeTypeSelect.value = 'operador';
+            handleEmployeeTypeChange();
             populateTrocadorSelect(employeeTrocadorSelect);
             if (employeeModal) employeeModal.style.display = 'flex';
         }
-        
+
         function handleEmployeeTypeChange() {
             if (!employeeTypeSelect || !horarioPausaField || !horarioPausaHelpText || !trocadorResponsavelField || !employeeTrocadorSelect || !employeeBreakTimeBaseSelect) return;
             const selectedType = employeeTypeSelect.value;
@@ -374,12 +411,12 @@
                 horarioPausaField.style.display = 'block';
                 horarioPausaHelpText.textContent = 'Horário de pausa fixo para este funcionário.';
                 trocadorResponsavelField.style.display = 'none';
-                employeeTrocadorSelect.value = ''; 
-            } else { 
+                employeeTrocadorSelect.value = '';
+            } else {
                 horarioPausaField.style.display = 'none';
                 trocadorResponsavelField.style.display = 'none';
-                employeeBreakTimeBaseSelect.value = ''; 
-                employeeTrocadorSelect.value = ''; 
+                employeeBreakTimeBaseSelect.value = '';
+                employeeTrocadorSelect.value = '';
             }
         }
 
@@ -390,7 +427,7 @@
             const id = employeeIdInput.value;
             const nome = employeeNameInput.value;
             const tipo = employeeTypeSelect.value;
-            
+
             let horario_pausa_base = null;
             if (['operador', 'supervisor', 'lider', 'treinador'].includes(tipo) && employeeBreakTimeBaseSelect.value) {
                 horario_pausa_base = employeeBreakTimeBaseSelect.value;
@@ -404,10 +441,10 @@
             const employeeData = { nome, tipo, horario_pausa_base, trocador_responsavel_id };
 
             let result;
-            if (id) { 
-                result = await sbClient.from('funcionarios').update(employeeData).eq('id', id).select(); 
-            } else { 
-                result = await sbClient.from('funcionarios').insert(employeeData).select(); 
+            if (id) {
+                result = await sbClient.from('funcionarios').update(employeeData).eq('id', id).select();
+            } else {
+                result = await sbClient.from('funcionarios').insert(employeeData).select();
             }
 
             if (result.error) {
@@ -416,13 +453,13 @@
             } else {
                 showToast(`Funcionário ${id ? 'atualizado' : 'adicionado'} com sucesso!`);
                 employeeModal.style.display = 'none';
-                await refreshAllData(); 
+                await refreshAllData();
             }
         }
 
         async function handleEditEmployee(event) {
             if (!employeeModalTitle || !employeeIdInput || !employeeNameInput || !employeeTypeSelect || !employeeTrocadorSelect || !employeeModal) return;
-            const id = event.currentTarget.dataset.id; 
+            const id = event.currentTarget.dataset.id;
             const employee = allEmployees.find(emp => emp.id === id);
             if (!employee) return;
 
@@ -430,26 +467,26 @@
             employeeIdInput.value = employee.id;
             employeeNameInput.value = employee.nome;
             employeeTypeSelect.value = employee.tipo;
-            
-            handleEmployeeTypeChange(); 
-            
+
+            handleEmployeeTypeChange();
+
             if (['operador', 'supervisor', 'lider', 'treinador'].includes(employee.tipo)) {
                  employeeBreakTimeBaseSelect.value = employee.horario_pausa_base || '';
             }
             if (employee.tipo === 'operador') {
                 populateTrocadorSelect(employeeTrocadorSelect, employee.trocador_responsavel_id);
             }
-            
+
             employeeModal.style.display = 'flex';
         }
-        
+
         async function handleDeleteEmployee(event) {
-            const id = event.currentTarget.dataset.id; 
+            const id = event.currentTarget.dataset.id;
             const employee = allEmployees.find(emp => emp.id === id);
             if (!employee) return;
 
             if (confirm(`Tem certeza que deseja excluir ${employee.nome}? Esta ação não pode ser desfeita.`)) {
-                const { data: referencingOperators, error: fetchError } = await sbClient 
+                const { data: referencingOperators, error: fetchError } = await sbClient
                     .from('funcionarios')
                     .select('id')
                     .eq('trocador_responsavel_id', id);
@@ -464,14 +501,14 @@
                     showToast(`${employee.nome} é trocador responsável por outros operadores. Reatribua-os antes de excluir.`, 'error');
                     return;
                 }
-                
-                const { error } = await sbClient.from('funcionarios').delete().eq('id', id); 
+
+                const { error } = await sbClient.from('funcionarios').delete().eq('id', id);
                 if (error) {
                     console.error('Erro ao excluir funcionário:', error);
                     showToast(`Erro ao excluir: ${error.message}`, 'error');
                 } else {
                     showToast('Funcionário excluído com sucesso!');
-                    await refreshAllData(); 
+                    await refreshAllData();
                 }
             }
         }
@@ -489,18 +526,18 @@
             });
         }
 
-        async function registerAttendance() { 
+        async function registerAttendance() {
             if (!attendanceEmployeeSelect || !attendanceDateInput || !attendanceStatusSelect) return;
             const funcionario_id = attendanceEmployeeSelect.value;
             const data = attendanceDateInput.value;
-            const status = attendanceStatusSelect.value; 
+            const status = attendanceStatusSelect.value;
 
             if (!funcionario_id || !data) {
                 showToast('Por favor, selecione funcionário e data.', 'error');
                 return;
             }
 
-            const { data: existing, error: fetchError } = await sbClient 
+            const { data: existing, error: fetchError } = await sbClient
                 .from('registros_presenca')
                 .select('id')
                 .eq('funcionario_id', funcionario_id)
@@ -512,16 +549,16 @@
                 showToast('Erro ao registrar presença.', 'error');
                 return;
             }
-            
+
             let result;
-            if (existing) { 
-                 result = await sbClient 
+            if (existing) {
+                 result = await sbClient
                     .from('registros_presenca')
                     .update({ status })
                     .eq('id', existing.id)
                     .select();
-            } else { 
-                 result = await sbClient 
+            } else {
+                 result = await sbClient
                     .from('registros_presenca')
                     .insert({ funcionario_id, data, status })
                     .select();
@@ -532,26 +569,32 @@
                 showToast(`Erro ao registrar presença: ${result.error.message}`, 'error');
             } else {
                 showToast(`Presença (${status}) registrada com sucesso!`);
-                await fetchAttendanceForDate(data); 
+                await fetchAttendanceForDate(data);
             }
         }
-        
+
         function updateDateDisplays(dateStr) {
             const formattedDt = formatDate(dateStr);
-            if (scheduleDateDisplayPausa) scheduleDateDisplayPausa.textContent = formattedDt; 
+            if (scheduleDateDisplayPausa) scheduleDateDisplayPausa.textContent = formattedDt;
             if (scheduleDateDisplayForTitle) scheduleDateDisplayForTitle.textContent = formattedDt;
+            if (document.getElementById('dashboardDateDisplay')) {
+                document.getElementById('dashboardDateDisplay').textContent = formattedDt;
+            }
         }
 
         // --- Funções de Horário de Pausa ---
         async function fetchAttendanceForDate(date) {
-            if (!date) { 
+            if (!date) {
                 console.warn("fetchAttendanceForDate chamado com data inválida");
-                attendanceRecordsToday = []; 
+                attendanceRecordsToday = [];
                 renderEmployeeSummary();
-                generateAndRenderBreakSchedule(null); 
+                generateAndRenderBreakSchedule(null);
+                if (document.getElementById('sectionDashboard').classList.contains('section-hidden') === false) {
+                    renderDashboard(); // Atualiza o dashboard com dados vazios
+                }
                 return;
             }
-            const { data: attendanceData, error } = await sbClient 
+            const { data: attendanceData, error } = await sbClient
                 .from('registros_presenca')
                 .select(`
                     status,
@@ -559,7 +602,7 @@
                     funcionario:funcionarios (id, nome, tipo, horario_pausa_base, trocador_responsavel_id)
                 `)
                 .eq('data', date);
-            
+
             if (error) {
                 console.error('Erro ao buscar registros de presença:', error);
                 showToast('Erro ao buscar presenças.', 'error');
@@ -570,17 +613,23 @@
                     funcionario: allEmployees.find(emp => emp.id === record.funcionario_id) || record.funcionario
                 }));
             }
-            renderEmployeeSummary(); 
-            generateAndRenderBreakSchedule(date); 
+            renderEmployeeSummary();
+            generateAndRenderBreakSchedule(date);
+            if (document.getElementById('sectionDashboard').classList.contains('section-hidden') === false) {
+                 renderDashboard(); // Atualiza o dashboard se estiver visível
+            }
         }
-        
+
         function getRotatedBreakHour(baseHourStr, currentDate) {
-            if (!baseHourStr) return null; 
-            const baseHour = parseInt(baseHourStr.split(':')[0]); 
-            const currentMonth = currentDate.getUTCMonth(); 
-            const shift = currentMonth; 
-            const newHourOffset = (baseHour - 15 + shift) % 5; 
-            return 15 + newHourOffset; 
+            if (!baseHourStr) return null;
+            const baseHour = parseInt(baseHourStr.split(':')[0]);
+            const currentMonth = currentDate.getUTCMonth(); // 0 (Janeiro) a 11 (Dezembro)
+            const shift = currentMonth; // Rotação baseada no mês (Janeiro = 0, Fevereiro = 1, etc.)
+            // Horários base: 15, 16, 17, 18, 19. O primeiro horário é 15.
+            // (baseHour - 15) dá o índice do horário base (0 a 4)
+            // Adiciona o shift e usa módulo 5 para ciclar entre os 5 horários possíveis.
+            const newHourOffset = (baseHour - 15 + shift) % 5;
+            return 15 + newHourOffset; // Retorna a nova hora (15 a 19)
         }
 
         function generateAndRenderBreakSchedule(dateStr) {
@@ -599,23 +648,23 @@
                     </tr>
                 `;
             }
-            breakScheduleTableBody.innerHTML = ''; 
+            breakScheduleTableBody.innerHTML = '';
 
-            if (!dateStr) { 
+            if (!dateStr) {
                 breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Por favor, selecione uma data.</td></tr>';
                 return;
             }
-            
-            const currentDate = new Date(dateStr + 'T00:00:00Z'); 
+
+            const currentDate = new Date(dateStr + 'T00:00:00Z'); // Use UTC para consistência com o mês
 
             const presentEmployees = attendanceRecordsToday
-                .filter(r => r.status === 'presente' && r.funcionario) 
+                .filter(r => r.status === 'presente' && r.funcionario)
                 .map(r => r.funcionario);
 
             const systemTrocadores = allEmployees.filter(emp => emp.tipo === 'trocador')
-                .sort((a, b) => a.nome.localeCompare(b.nome)); 
-            
-            const otherLeadersPresent = presentEmployees.filter(emp => 
+                .sort((a, b) => a.nome.localeCompare(b.nome));
+
+            const otherLeadersPresent = presentEmployees.filter(emp =>
                 ['supervisor', 'lider', 'treinador'].includes(emp.tipo) && emp.horario_pausa_base
             ).sort((a,b) => a.nome.localeCompare(b.nome));
 
@@ -623,7 +672,7 @@
                 breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Nenhum trocador ou liderança cadastrada para exibir.</td></tr>';
                 return;
             }
-            
+
             let hasAnyEntry = false;
 
             systemTrocadores.forEach(trocador => {
@@ -636,7 +685,7 @@
                     .filter(emp => emp.tipo === 'operador' && emp.trocador_responsavel_id === trocador.id && emp.horario_pausa_base)
                     .map(op => ({
                         ...op,
-                        rotatedBreakHour: getRotatedBreakHour(op.horario_pausa_base, currentDate) 
+                        rotatedBreakHour: getRotatedBreakHour(op.horario_pausa_base, currentDate)
                     }))
                     .sort((a, b) => {
                         const hourA = a.rotatedBreakHour === null ? 99 : a.rotatedBreakHour;
@@ -645,10 +694,10 @@
                         return hourA - hourB;
                     });
 
-                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`; 
-                
-                const operatorBreakSlotsColumns = [16, 17, 18, 19]; 
-                let operatorToPlaceIndex = 0; 
+                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`; // Coluna 15h para trocadores
+
+                const operatorBreakSlotsColumns = [16, 17, 18, 19]; // Horários para operadores
+                let operatorToPlaceIndex = 0;
 
                 operatorBreakSlotsColumns.forEach(slotColumnHour => {
                     if (operatorToPlaceIndex < presentOperatorsForThisTrocador.length) {
@@ -656,13 +705,13 @@
                         tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-700 text-center">${operator.nome}</td>`;
                         operatorToPlaceIndex++;
                     } else {
-                        tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`; 
+                        tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-400 text-center">-</td>`;
                     }
                 });
 
                 const isTrocadorPresent = presentEmployees.some(pEmp => pEmp.id === trocador.id);
                 if (isTrocadorPresent) {
-                    tr.innerHTML += `<td class="py-3 px-4 text-sm text-center font-semibold bg-blue-100 text-blue-700">${trocador.nome.toUpperCase()}</td>`;
+                    tr.innerHTML += `<td class="py-3 px-4 text-sm text-center font-semibold bg-blue-100 text-blue-700">${trocador.nome.toUpperCase()}</td>`; // Trocador na coluna 20h
                 } else {
                     tr.innerHTML += `<td class="py-3 px-4 text-sm text-center font-semibold bg-red-100 text-red-600">AUSENTE</td>`;
                 }
@@ -672,11 +721,11 @@
             otherLeadersPresent.forEach(leader => {
                 hasAnyEntry = true;
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-gray-200 last:border-b-0 bg-gray-50"; 
-                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-800 font-semibold">${leader.nome}</td>`; 
-                
+                tr.className = "border-b border-gray-200 last:border-b-0 bg-gray-50";
+                tr.innerHTML += `<td class="py-3 px-4 text-sm text-gray-800 font-semibold">${leader.nome}</td>`;
+
                 const leaderBreakHour = parseInt(leader.horario_pausa_base.split(':')[0]);
-                const breakSlots = [15, 16, 17, 18, 19, 20]; 
+                const breakSlots = [15, 16, 17, 18, 19, 20];
 
                 breakSlots.forEach(slotHour => {
                     if (slotHour === leaderBreakHour) {
@@ -688,7 +737,7 @@
                 breakScheduleTableBody.appendChild(tr);
             });
 
-            if (!hasAnyEntry) { 
+            if (!hasAnyEntry) {
                  breakScheduleTableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">Nenhum funcionário (trocador ou liderança) para exibir na escala de pausa.</td></tr>';
             }
         }
@@ -702,7 +751,7 @@
                 const pageHeight = doc.internal.pageSize.getHeight();
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const footerText = "ScWeb - 2025 @ Rafael Scarpato";
-                
+
                 doc.setFontSize(18);
                 doc.text("Horários de Janta", pageWidth / 2, 15, { align: 'center' });
                 doc.setFontSize(12);
@@ -710,31 +759,31 @@
 
                 doc.autoTable({
                     html: '#breakScheduleTable', startY: 30, theme: 'grid',
-                    headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' }, 
+                    headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
                     styles: { font: 'Inter', cellPadding: 2.5, fontSize: 9, halign: 'center', valign: 'middle' },
-                    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 50 } }, 
+                    columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 50 } },
                     didParseCell: function (data) {
                         if (data.column.index > 0 || data.section === 'head') data.cell.styles.halign = 'center';
                         if (data.column.index === 0 && data.section === 'body' && data.cell.text[0]) {
-                            data.cell.text[0] = data.cell.text[0].split(' (')[0]; 
+                            data.cell.text[0] = data.cell.text[0].split(' (')[0];
                         }
                         const employeeNameInCell = data.cell.text[0]?.split(' (')[0].trim().toUpperCase();
                         const isTrocador = allEmployees.find(e => e.nome.toUpperCase() === employeeNameInCell && e.tipo === 'trocador');
                         const isOtherLeader = allEmployees.find(e => e.nome.toUpperCase() === employeeNameInCell && ['supervisor', 'lider', 'treinador'].includes(e.tipo));
 
-                        if (isTrocador) { 
-                            if (data.column.index === 6) { 
-                                 if (data.cell.text[0] && data.cell.text[0].includes("AUSENTE")) { 
-                                    data.cell.styles.fillColor = '#fee2e2'; data.cell.styles.textColor = '#ef4444';
+                        if (isTrocador) {
+                            if (data.column.index === 6) { // Coluna 20h
+                                 if (data.cell.text[0] && data.cell.text[0].includes("AUSENTE")) {
+                                    data.cell.styles.fillColor = '#fee2e2'; data.cell.styles.textColor = '#ef4444'; // bg-red-100, text-red-500
                                 } else if (data.cell.text[0] && data.cell.text[0] !== '-') {
-                                    data.cell.styles.fillColor = '#dbeafe'; data.cell.styles.textColor = '#1e40af';
+                                    data.cell.styles.fillColor = '#dbeafe'; data.cell.styles.textColor = '#1e40af'; // bg-blue-100, text-blue-800
                                 }
                             }
                         }
                         else if (isOtherLeader) {
-                            if (data.cell.text[0] && data.cell.text[0] !== '-' && data.column.index > 0 && data.column.index < 7) { 
-                                if (data.cell.text[0].toUpperCase() === isOtherLeader.nome.toUpperCase()) {
-                                    data.cell.styles.fillColor = '#f3e8ff'; data.cell.styles.textColor = '#7e22ce'; 
+                            if (data.cell.text[0] && data.cell.text[0] !== '-' && data.column.index > 0 && data.column.index < 7) {
+                                if (data.cell.text[0].toUpperCase() === isOtherLeader.nome.toUpperCase()) { // Celula do próprio líder
+                                    data.cell.styles.fillColor = '#f3e8ff'; data.cell.styles.textColor = '#7e22ce'; // bg-purple-100, text-purple-700
                                 }
                             }
                         }
@@ -766,11 +815,11 @@
                     breakScheduleTable.style.overflow = 'visible';
                     breakScheduleTable.style.height = 'auto';
                 }
-                
-                printableAreaHeader.classList.add('capture-visible');
-                printableAreaFooter.style.display = 'block'; 
 
-                html2canvas(printableArea, { 
+                printableAreaHeader.classList.add('capture-visible');
+                printableAreaFooter.style.display = 'block';
+
+                html2canvas(printableArea, {
                     scale: 2, useCORS: true, backgroundColor: '#ffffff',
                     width: printableArea.scrollWidth, height: printableArea.scrollHeight
                 }).then(canvas => {
@@ -792,7 +841,7 @@
                     console.error("Erro ao gerar PNG:", err);
                     showToast('Erro ao gerar PNG.', 'error');
                     printableAreaHeader.classList.remove('capture-visible');
-                    printableAreaFooter.style.display = 'none'; 
+                    printableAreaFooter.style.display = 'none';
                     printableArea.style.overflow = originalPrintableAreaOverflow;
                     printableArea.style.height = originalPrintableAreaHeight;
                     if (breakScheduleTable) {
@@ -801,53 +850,154 @@
                     }
                 });
             });
-        
-            if (printScheduleBtn) printScheduleBtn.addEventListener('click', () => { 
+
+            if (printScheduleBtn) printScheduleBtn.addEventListener('click', () => {
                 if (!printableAreaHeader || !printableAreaFooter) return;
-                printableAreaHeader.classList.add('capture-visible'); 
+                printableAreaHeader.classList.add('capture-visible');
                 printableAreaFooter.style.display = 'block';
-                window.print(); 
+                window.print();
                 setTimeout(() => {
                      printableAreaHeader.classList.remove('capture-visible');
-                     printableAreaFooter.style.display = 'none'; 
-                }, 1000); 
+                     printableAreaFooter.style.display = 'none';
+                }, 1000);
             });
+        }
+
+        // --- Funções do Dashboard ---
+        function renderDashboard() {
+            const dashboardDateElem = document.getElementById('dashboardDateDisplay');
+            if (dashboardDateElem && attendanceDateInput) {
+                dashboardDateElem.textContent = formatDate(attendanceDateInput.value);
+            }
+
+            // KPIs
+            const totalEmployeesElem = document.getElementById('kpiTotalEmployees');
+            const presentTodayElem = document.getElementById('kpiPresentToday');
+            const absentTodayElem = document.getElementById('kpiAbsentToday');
+
+            if (totalEmployeesElem) totalEmployeesElem.textContent = allEmployees.length;
+
+            const presentCount = attendanceRecordsToday.filter(r => r.status === 'presente').length;
+            const absentCount = attendanceRecordsToday.filter(r => r.status === 'ausente').length;
+
+            if (presentTodayElem) presentTodayElem.textContent = presentCount;
+            if (absentTodayElem) absentTodayElem.textContent = absentCount;
+
+            // Gráfico de Presença
+            const attendanceCtx = document.getElementById('attendanceChart');
+            if (attendanceCtx) {
+                if (attendanceChart) {
+                    attendanceChart.destroy();
+                }
+                attendanceChart = new Chart(attendanceCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Presentes', 'Ausentes', 'Não Registrados'],
+                        datasets: [{
+                            label: 'Status de Presença',
+                            data: [
+                                presentCount,
+                                absentCount,
+                                allEmployees.length - (presentCount + absentCount)
+                            ],
+                            backgroundColor: [
+                                'rgb(16, 185, 129)', // green-500
+                                'rgb(239, 68, 68)',  // red-500
+                                'rgb(209, 213, 219)' // gray-300
+                            ],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Visão Geral da Presença',
+                                font: { size: 16 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Gráfico de Tipo de Funcionário
+            const employeeTypeCtx = document.getElementById('employeeTypeChart');
+            if (employeeTypeCtx) {
+                if (employeeTypeChart) {
+                    employeeTypeChart.destroy();
+                }
+                const typeCounts = allEmployees.reduce((acc, emp) => {
+                    acc[emp.tipo] = (acc[emp.tipo] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const typeLabels = Object.keys(typeCounts).map(type => type.charAt(0).toUpperCase() + type.slice(1));
+                const typeData = Object.values(typeCounts);
+
+                employeeTypeChart = new Chart(employeeTypeCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: typeLabels,
+                        datasets: [{
+                            label: 'Distribuição por Tipo',
+                            data: typeData,
+                            backgroundColor: [ // Cores variadas para o gráfico de pizza
+                                'rgb(59, 130, 246)', // blue-500
+                                'rgb(249, 115, 22)', // orange-500
+                                'rgb(139, 92, 246)', // violet-500
+                                'rgb(22, 163, 74)',  // green-600
+                                'rgb(217, 70, 239)'  // fuchsia-500
+                            ],
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Distribuição de Funcionários por Tipo',
+                                font: { size: 16 }
+                            }
+                        }
+                    }
+                });
+            }
+             lucide.createIcons(); // Para garantir que os ícones nos KPIs sejam renderizados
         }
 
 
         // --- Inicialização ---
         async function refreshAllData() {
             await fetchEmployees();
-            populateAttendanceEmployeeSelect(allEmployees);
-            populateTrocadorSelect(employeeTrocadorSelect);
-            
-            const currentDate = attendanceDateInput.value;
+            populateAttendanceEmployeeSelect(allEmployees); // Para a seção de registro
+            if (employeeTrocadorSelect) populateTrocadorSelect(employeeTrocadorSelect); // Para o modal
+
+            const currentDate = attendanceDateInput ? attendanceDateInput.value : null;
             if (currentDate) {
-                await fetchAttendanceForDate(currentDate);
+                await fetchAttendanceForDate(currentDate); // Isso já chama renderEmployeeSummary e generateAndRenderBreakSchedule
             } else {
-                renderEmployeeSummary(); 
-                generateAndRenderBreakSchedule(null); 
+                renderEmployeeSummary();
+                generateAndRenderBreakSchedule(null);
             }
             updateEmployeeDisplayControls();
+
+            // Se o dashboard estiver visível, atualize-o
+            if (sections && sections.dashboard && !sections.dashboard.classList.contains('section-hidden')) {
+                renderDashboard();
+            }
         }
+
 
         function initializeDOMReferences() {
             attendanceDateInput = document.getElementById('attendanceDate');
             toastElement = document.getElementById('toast');
             employeeModal = document.getElementById('employeeModal');
-            openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModalBtn');
-            openAddEmployeeModalBtnSecondary = document.getElementById('openAddEmployeeModalBtnSecondary');
-            closeEmployeeModalBtn = document.getElementById('closeEmployeeModalBtn');
-            employeeForm = document.getElementById('employeeForm');
-            employeeModalTitle = document.getElementById('employeeModalTitle');
-            employeeIdInput = document.getElementById('employeeId');
-            employeeNameInput = document.getElementById('employeeName');
-            employeeTypeSelect = document.getElementById('employeeType');
-            horarioPausaField = document.getElementById('horarioPausaField');
-            horarioPausaHelpText = document.getElementById('horarioPausaHelpText');
-            employeeBreakTimeBaseSelect = document.getElementById('employeeBreakTimeBase');
-            trocadorResponsavelField = document.getElementById('trocadorResponsavelField');
-            employeeTrocadorSelect = document.getElementById('employeeTrocador');
+            // Botões e campos do modal de funcionário (serão buscados após injeção de HTML)
+            // ...
             attendanceEmployeeSelect = document.getElementById('attendanceEmployeeSelect');
             attendanceStatusSelect = document.getElementById('attendanceStatus');
             registerAttendanceBtn = document.getElementById('registerAttendanceBtn');
@@ -860,7 +1010,7 @@
             scheduleDateDisplayForTitle = document.getElementById('scheduleDateDisplayForTitle');
             printableAreaHeader = document.getElementById('printableAreaHeader');
             breakScheduleTable = document.getElementById('breakScheduleTable');
-            breakScheduleTableBody = document.getElementById('breakScheduleTableBody');
+            // breakScheduleTableBody será buscado após injeção de HTML da seção de pausas
             exportPdfBtn = document.getElementById('exportPdfBtn');
             exportPngBtn = document.getElementById('exportPngBtn');
             printScheduleBtn = document.getElementById('printScheduleBtn');
@@ -877,38 +1027,64 @@
                 dashboard: document.getElementById('sectionDashboard'),
             };
         }
-        
-        function initializeAppEventListeners() {
+
+        // Função para buscar referências de elementos que são injetados dinamicamente
+        function initializeDynamicDOMReferences() {
+            openAddEmployeeModalBtn = document.getElementById('openAddEmployeeModalBtn');
+            openAddEmployeeModalBtnSecondary = document.getElementById('openAddEmployeeModalBtnSecondary');
+            closeEmployeeModalBtn = document.getElementById('closeEmployeeModalBtn');
+            employeeForm = document.getElementById('employeeForm');
+            employeeModalTitle = document.getElementById('employeeModalTitle');
+            employeeIdInput = document.getElementById('employeeId');
+            employeeNameInput = document.getElementById('employeeName');
+            employeeTypeSelect = document.getElementById('employeeType');
+            horarioPausaField = document.getElementById('horarioPausaField');
+            horarioPausaHelpText = document.getElementById('horarioPausaHelpText');
+            employeeBreakTimeBaseSelect = document.getElementById('employeeBreakTimeBase');
+            trocadorResponsavelField = document.getElementById('trocadorResponsavelField');
+            employeeTrocadorSelect = document.getElementById('employeeTrocador');
+            breakScheduleTableBody = document.getElementById('breakScheduleTableBody'); // Referência para o tbody da tabela de pausas
+
+             // Listeners para elementos dinâmicos do modal
             if (openAddEmployeeModalBtn) openAddEmployeeModalBtn.addEventListener('click', openEmployeeModalForAdd);
             if (openAddEmployeeModalBtnSecondary) openAddEmployeeModalBtnSecondary.addEventListener('click', openEmployeeModalForAdd);
             if (closeEmployeeModalBtn) closeEmployeeModalBtn.addEventListener('click', () => { if (employeeModal) employeeModal.style.display = 'none'; });
-            
-            window.addEventListener('click', (event) => { if (event.target === employeeModal && employeeModal) employeeModal.style.display = 'none'; });
-            
             if (employeeTypeSelect) employeeTypeSelect.addEventListener('change', handleEmployeeTypeChange);
             if (employeeForm) employeeForm.addEventListener('submit', handleEmployeeFormSubmit);
-            if (registerAttendanceBtn) registerAttendanceBtn.addEventListener('click', registerAttendance);
-            
-            if (attendanceDateInput) attendanceDateInput.addEventListener('change', (e) => {
-                const newDate = e.target.value;
-                if (newDate) { updateDateDisplays(newDate); fetchAttendanceForDate(newDate); }
-            });
+            handleEmployeeTypeChange(); // Chama para configurar o modal inicialmente
+        }
 
+
+        function initializeAppEventListeners() {
+            // Eventos de navegação principal
             if (navButtons.registrarPresencas) navButtons.registrarPresencas.addEventListener('click', () => showSection('registrarPresencas'));
             if (navButtons.horariosPausa) navButtons.horariosPausa.addEventListener('click', () => showSection('horariosPausa'));
             if (navButtons.dashboard) navButtons.dashboard.addEventListener('click', () => showSection('dashboard'));
+
+            // Eventos da seção Registrar Presenças (já existentes ou que serão referenciados após injeção)
+            if (registerAttendanceBtn) registerAttendanceBtn.addEventListener('click', registerAttendance);
+            if (attendanceDateInput) attendanceDateInput.addEventListener('change', (e) => {
+                const newDate = e.target.value;
+                if (newDate) {
+                    updateDateDisplays(newDate);
+                    fetchAttendanceForDate(newDate); // Isso já vai chamar renderDashboard se necessário
+                }
+            });
 
             if (viewModeListBtn) viewModeListBtn.addEventListener('click', () => { currentEmployeeView = 'list'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
             if (viewModeGalleryBtn) viewModeGalleryBtn.addEventListener('click', () => { currentEmployeeView = 'gallery'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
             if (sortAZBtn) sortAZBtn.addEventListener('click', () => { currentEmployeeSort = 'az'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
             if (sortZABtn) sortZABtn.addEventListener('click', () => { currentEmployeeSort = 'za'; updateEmployeeDisplayControls(); renderEmployeeSummary(); });
 
+            // Evento de fechar modal ao clicar fora
+            window.addEventListener('click', (event) => { if (event.target === employeeModal && employeeModal) employeeModal.style.display = 'none'; });
+
             setupExportButtonListeners(); // Configura os listeners dos botões de exportação
         }
 
 
         async function initializeApp() {
-            // Injeta o HTML das seções que podem ter sido movidas ou simplificadas
+            // Injeta o HTML das seções
             document.getElementById('sectionRegistrarPresencas').innerHTML = `
                 <div class="text-center mb-6">
                     <label for="attendanceDate" class="block text-sm font-medium text-gray-700 mb-1">Data Selecionada</label>
@@ -937,15 +1113,15 @@
                     <div class="lg:col-span-1 space-y-4">
                         <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded-md shadow">
                             <h3 class="font-bold mb-1">Instruções</h3>
-                            <p class="text-sm">Use o formulário ao lado para registrar a presença ou ausência de um funcionário...</p>
+                            <p class="text-sm">Use o formulário ao lado para registrar a presença ou ausência de um funcionário para a data selecionada. Novos funcionários podem ser adicionados através do botão "Novo Funcionário".</p>
                         </div>
                         <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow">
                             <h3 class="font-bold mb-1">Como funciona</h3>
-                            <p class="text-sm">Operadores: "Horário de Pausa Base" é referência para Janeiro e rotaciona mensalmente...</p>
+                            <p class="text-sm">Para Operadores, o "Horário de Pausa Base" é uma referência para Janeiro e rotaciona automaticamente nos meses seguintes. Para outros cargos, o horário de pausa é fixo.</p>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-lg">
+                <div class="bg-white p-6 rounded-lg shadow-lg mt-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
                         <h2 class="text-xl font-semibold text-gray-700">Resumo de Presenças do Dia</h2>
                         <div class="flex flex-wrap gap-2 items-center w-full sm:w-auto justify-start sm:justify-end">
@@ -959,22 +1135,56 @@
             document.getElementById('sectionHorariosPausa').innerHTML = `
                 <div class="bg-white p-6 rounded-lg shadow-lg">
                     <div class="flex flex-col sm:flex-row flex-wrap gap-2 mb-4 no-print items-center">
-                        <h2 class="text-xl font-semibold text-gray-700 mr-auto">Horários de Pausa (<span id="scheduleDateDisplayPausa"></span>)</h2>
+                        <h2 class="text-xl font-semibold text-gray-700 mr-auto">Horários de Pausa (<span id="scheduleDateDisplayPausa">Data</span>)</h2>
                         <button id="exportPdfBtn" class="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out"><i data-lucide="file-down" class="mr-2 h-5 w-5"></i>Exportar PDF</button>
                         <button id="exportPngBtn" class="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out"><i data-lucide="image" class="mr-2 h-5 w-5"></i>Exportar PNG</button>
                         <button id="printScheduleBtn" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg shadow inline-flex items-center justify-center transition duration-150 ease-in-out"><i data-lucide="printer" class="mr-2 h-5 w-5"></i>Imprimir</button>
                     </div>
                     <div id="printableArea" class="overflow-x-auto bg-white p-0 md:p-4 rounded">
-                        <div id="printableAreaHeader" class="text-center mb-4 print-only"><h2 class="text-2xl font-bold text-gray-800">Horários de Janta</h2><h3 class="text-lg font-semibold text-gray-600">Horário de Pausas e Operadores - <span id="scheduleDateDisplayForTitle"></span></h3></div>
+                        <div id="printableAreaHeader" class="text-center mb-4 print-only"><h2 class="text-2xl font-bold text-gray-800">Horários de Janta</h2><h3 class="text-lg font-semibold text-gray-600">Horário de Pausas e Operadores - <span id="scheduleDateDisplayForTitle">Data</span></h3></div>
                         <table id="breakScheduleTable" class="min-w-full bg-white rounded-lg shadow mb-4"><thead></thead><tbody id="breakScheduleTableBody" class="divide-y divide-gray-200"></tbody></table>
                         <div id="printableAreaFooter" class="text-center text-xs text-gray-600 pt-4 mt-4 border-t border-gray-200">ScWeb - 2025 @ Rafael Scarpato</div>
                     </div>
                 </div>`;
             document.getElementById('sectionDashboard').innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">Dashboard</h2>
-                    <i data-lucide="construction" class="h-16 w-16 text-gray-400 mx-auto mb-2"></i>
-                    <p class="text-gray-500">Esta seção está em desenvolvimento.</p>
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-semibold text-gray-800">Dashboard</h2>
+                        <div class="text-lg text-gray-600">Data: <span id="dashboardDateDisplay"></span></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="kpi-card">
+                            <div class="flex items-center justify-center text-blue-500 mb-2">
+                                <i data-lucide="users" class="h-8 w-8"></i>
+                            </div>
+                            <h3 class="kpi-card-title">Total de Funcionários</h3>
+                            <p id="kpiTotalEmployees" class="kpi-card-value">0</p>
+                        </div>
+                        <div class="kpi-card">
+                             <div class="flex items-center justify-center text-green-500 mb-2">
+                                <i data-lucide="user-check" class="h-8 w-8"></i>
+                            </div>
+                            <h3 class="kpi-card-title">Presentes Hoje</h3>
+                            <p id="kpiPresentToday" class="kpi-card-value">0</p>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="flex items-center justify-center text-red-500 mb-2">
+                                <i data-lucide="user-x" class="h-8 w-8"></i>
+                            </div>
+                            <h3 class="kpi-card-title">Ausentes Hoje</h3>
+                            <p id="kpiAbsentToday" class="kpi-card-value">0</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="chart-container">
+                            <canvas id="attendanceChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="employeeTypeChart"></canvas>
+                        </div>
+                    </div>
                 </div>`;
             document.getElementById('employeeModal').innerHTML = `
                 <div class="modal-content">
@@ -983,23 +1193,23 @@
                     <form id="employeeForm">
                         <input type="hidden" id="employeeId">
                         <div class="mb-4"><label for="employeeName" class="block text-sm font-medium text-gray-700">Nome:</label><input type="text" id="employeeName" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></div>
-                        <div class="mb-4"><label for="employeeType" class="block text-sm font-medium text-gray-700">Tipo:</label><select id="employeeType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="operador">Operador</option><option value="trocador">Trocador (Supervisor de Linha)</option><option value="supervisor">Supervisor</option><option value="lider">Líder</option><option value="treinador">Treinador</option></select></div>
-                        <div id="operadorFieldsContainer"><div id="horarioPausaField" class="mb-4" style="display: none;"><label for="employeeBreakTimeBase" class="block text-sm font-medium text-gray-700">Horário de Pausa:</label><p id="horarioPausaHelpText" class="text-xs text-gray-500 mb-1"></p><select id="employeeBreakTimeBase" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="15:00:00">15:00</option><option value="16:00:00">16:00</option><option value="17:00:00">17:00</option><option value="18:00:00">18:00</option><option value="19:00:00">19:00</option></select></div><div id="trocadorResponsavelField" class="mb-4" style="display: none;"><label for="employeeTrocador" class="block text-sm font-medium text-gray-700">Trocador Responsável:</label><select id="employeeTrocador" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select></div></div>
+                        <div class="mb-4"><label for="employeeType" class="block text-sm font-medium text-gray-700">Tipo:</label><select id="employeeType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="operador">Operador</option><option value="trocador">Trocador (Sup. Linha)</option><option value="supervisor">Supervisor</option><option value="lider">Líder</option><option value="treinador">Treinador</option></select></div>
+                        <div id="operadorFieldsContainer"><div id="horarioPausaField" class="mb-4" style="display: none;"><label for="employeeBreakTimeBase" class="block text-sm font-medium text-gray-700">Horário de Pausa Base (Ref. Janeiro):</label><p id="horarioPausaHelpText" class="text-xs text-gray-500 mb-1"></p><select id="employeeBreakTimeBase" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"><option value="">Selecione</option><option value="15:00:00">15:00</option><option value="16:00:00">16:00</option><option value="17:00:00">17:00</option><option value="18:00:00">18:00</option><option value="19:00:00">19:00</option></select></div><div id="trocadorResponsavelField" class="mb-4" style="display: none;"><label for="employeeTrocador" class="block text-sm font-medium text-gray-700">Trocador Responsável:</label><select id="employeeTrocador" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></select></div></div>
                         <div class="flex justify-end"><button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition duration-150 ease-in-out">Salvar</button></div>
                     </form>
                 </div>`;
 
-            initializeDOMReferences(); // Agora que o HTML foi injetado, podemos pegar as referências
-            initializeAppEventListeners(); // E configurar os listeners
+            initializeDOMReferences(); // Pega as referências estáticas primeiro
+            initializeDynamicDOMReferences(); // Pega as referências dos elementos injetados e configura seus listeners
+            initializeAppEventListeners(); // Configura os listeners restantes
 
-            const defaultDate = "2025-05-14"; 
-            if (attendanceDateInput) attendanceDateInput.value = defaultDate; 
+            const defaultDate = new Date().toISOString().slice(0,10); // Data de hoje
+            if (attendanceDateInput) attendanceDateInput.value = defaultDate;
             updateDateDisplays(defaultDate);
-            
-            await refreshAllData(); 
-            showSection('registrarPresencas'); 
-            lucide.createIcons(); 
-            handleEmployeeTypeChange(); 
+
+            await refreshAllData();
+            showSection('registrarPresencas');
+            lucide.createIcons();
         }
 
         document.addEventListener('DOMContentLoaded', initializeApp);
